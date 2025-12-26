@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{page.title.amr}">在线车辆 - wms管理中心</title>
+    <link rel="icon" th:href="@{/images/favicon.svg}" type="image/ico">
+    <link rel="stylesheet" th:href="@{/css/materialdesignicons.min.css}">
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.min.css}">
+    <style>
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .table th {
+            white-space: nowrap;
+        }
+
+        .amr-status {
+            display: inline-block;
+            width: 10px;
+            height: 20px;
+            text-align: center;
+            margin-right: 5px;
+            transition: all 0.3s ease;
+            vertical-align: middle; /* 添加垂直对齐 */
+        }
+
+        .status-online {
+            background-color: #28a745;
+            box-shadow: 0 0 0 rgba(40, 167, 69, 0.4);
+            animation: pulse-online 2s infinite;
+        }
+
+        .status-offline {
+            background-color: #6c757d;
+        }
+
+        @keyframes pulse-online {
+            0% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 8px rgba(40, 167, 69, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+            }
+        }
+
+        /* 替换原有的.badge样式 */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 500;
+            min-width: 60px;
+            height: 18px; /* 固定高度 */
+            padding: 0 8px;
+            border-radius: 12px;
+            line-height: 1;
+        }
+
+        .badge-success {
+            background-color: #28a745;
+        }
+
+        .badge-secondary {
+            background-color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+<div class="hx-layout-web">
+    <!--左侧导航-->
+    <div th:replace="~{navbar :: sidebar}"></div>
+
+    <!-- 页面主要内容 -->
+    <main class="hx-layout-content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title" th:text="#{nav.amr.management}">在线车辆管理</h4>
+                        </div>
+                        <div class="card-toolbar clearfix">
+                            <!-- 操作按钮区域 -->
+                            <div class="pull-left">
+                                <button class="btn btn-info" onclick="addAmrRole()">
+                                    <i class="mdi mdi-refresh"></i> <span
+                                        th:text="#{btn.assign.permission}">分配权限</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead class="thead-light">
+                                    <tr>
+                                        <th width="50"><input id="selectAll" type="checkbox"></th>
+                                        <th th:text="#{table.header.vehicle.id}" width="100">车辆ID</th>
+                                        <th th:text="#{table.header.alias}" width="150">别名</th>
+                                        <th th:text="#{table.header.status}" width="100">状态</th>
+                                        <th th:text="#{table.header.operations}" width="120">操作</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="dataTable">
+                                    <!-- 数据将通过AJAX动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<!-- 分配权限模态框 -->
+<div aria-hidden="true" aria-labelledby="addRoleModalLabel" class="modal fade" id="addRoleModal" role="dialog"
+     tabindex="-1">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><i class="mdi mdi-plus"></i> <span th:text="#{modal.title.assign.permission}">分配权限</span>
+                </h4>
+            </div>
+            <div class="modal-body">
+                <form id="roleForm">
+                    <div class="form-group">
+                        <label for="userSearch" th:text="#{form.label.select.user}">选择用户</label>
+                        <div class="input-group">
+                            <input class="form-control" id="userSearch" placeholder="搜索用户,shift多选"
+                                   th:placeholder="#{placeholder.search.users}" type="text">
+                            <div class="input-group-btn">
+                                <button class="btn btn-primary" onclick="searchUsers()" type="button">
+                                    <i class="mdi mdi-magnify"></i> <span th:text="#{btn.search}">搜索</span>
+                                </button>
+                            </div>
+                        </div>
+                        <select class="form-control m-t-10" id="userSelect" multiple style="height: 100px;">
+                            <!-- 用户列表将通过AJAX动态加载 -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label th:text="#{form.label.add.method}">添加方式</label>
+                        <div>
+                            <label class="hx-radio radio-inline radio-primary">
+                                <input id="addTypeAppend" name="addType" type="radio"
+                                       value="1"><span th:text="#{form.label.add.new.permission}">追加新权限</span>
+                            </label>
+                            <label class="hx-radio radio-inline radio-primary">
+                                <input id="addTypeReplace" name="addType" type="radio"
+                                       value="2"><span
+                                    th:text="#{form.label.replace.existing.permission}">替换现有权限</span>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal" th:text="#{btn.cancel}" type="button">取消
+                </button>
+                <button class="btn btn-primary" onclick="saveAmrRoles()" th:text="#{btn.save}" type="button">保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<div aria-hidden="true" aria-labelledby="editAliasModalLabel" class="modal fade" id="editAliasModal" role="dialog"
+     tabindex="-1">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><i class="mdi mdi-plus"></i> <span th:text="#{modal.title.edit}">编辑</span>
+                </h4>
+            </div>
+            <div class="modal-body">
+                <form id="aliasForm">
+                    <input id="editId" type="hidden">
+                    <div class="form-group">
+                        <label for="alias" th:text="#{form.label.alias}">别名</label>
+                        <input class="form-control" id="alias" name="alias" required type="text">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal" th:text="#{btn.cancel}" type="button">取消
+                </button>
+                <button class="btn btn-primary" onclick="saveAlias()" th:text="#{btn.save}" type="button">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/jquery.min.js}"></script>
+<script th:src="@{/js/bootstrap.min.js}"></script>
+<script th:src="@{/js/perfect-scrollbar.min.js}"></script>
+<script th:src="@{/js/main.min.js}"></script>
+<script th:src="@{/js/project/searchUser.js}"></script>
+<script th:inline="javascript">
+    // I18n messages for JavaScript
+    window.i18n = {
+        statusOnline: /*[[#{status.online}]]*/ '在线',
+        statusOffline: /*[[#{status.offline}]]*/ '离线',
+        msgNoData: /*[[#{msg.no.data}]]*/ '暂无数据',
+        msgLoadingFailed: /*[[#{msg.loading.failed}]]*/ '加载失败',
+        msgSelectAtLeastOne: /*[[#{msg.select.at.least.one}]]*/ '请至少选择一条记录',
+        msgSelectAtLeastOneUser: /*[[#{msg.select.at.least.one.user}]]*/ '请至少选择一个用户',
+        msgPermissionAssignedSuccess: /*[[#{msg.permission.assigned.success}]]*/ '权限分配成功',
+        msgPermissionAssignmentFailed: /*[[#{msg.permission.assignment.failed}]]*/ '权限分配失败',
+        msgSaveSuccess: /*[[#{msg.save.success}]]*/ '保存成功',
+        msgUpdateFailed: /*[[#{msg.update.failed}]]*/ '更新失败',
+        msgServerError: /*[[#{msg.server.error}]]*/ '服务器错误',
+        msgInvalidId: /*[[#{msg.invalid.id}]]*/ '无效的ID',
+        btnEdit: /*[[#{btn.edit}]]*/ '编辑',
+        modalTitleEdit: /*[[#{modal.title.edit}]]*/ '编辑'
+    };
+</script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+
+    // 全局变量存储当前数据
+    let amrData = [];
+
+    // 页面加载时初始化数据
+    $(document).ready(function () {
+        loadData();
+
+        // 设置自动刷新
+        setInterval(loadData, 5000);
+
+        // 回车键触发搜索
+        $('#amrIdInput').keypress(function (e) {
+            if (e.which === 13) {
+                loadData();
+            }
+        });
+
+        // 全选/取消全选
+        $('#selectAll').click(function () {
+            $('.row-checkbox').prop('checked', this.checked);
+        });
+    });
+
+    // 加载数据
+    function loadData() {
+        $.ajax({
+            url: '/api/amr/table/list',
+            type: 'POST',
+            success: function (res) {
+                if (Array.isArray(res.data)) {
+                    amrData = res.data;
+                    renderTable();
+                } else {
+                    console.error('Invalid response format', res);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('Error loading AMR data:', error);
+                $('#dataTable').html('<tr><td colspan="4" class="text-center text-danger">' + window.i18n.msgLoadingFailed + ': ' + error + '</td></tr>');
+            }
+        });
+    }
+
+    // 渲染表格（修复版）
+    function renderTable() {
+        let html = '';
+        if (amrData && amrData.length > 0) {
+            amrData.forEach(item => {
+                html += `
+            <tr>
+                <td><input type="checkbox" class="row-checkbox" value="${item.amrId}"></td>
+                <td>${item.amrId}</td>
+                <td>${item.alias || '-'}</td>
+                <td>
+                    <span class="amr-status status-${item.status === 1 ? 'online' : 'offline'} badge badge-${item.status === 1 ? 'success' : 'secondary'}">
+                        ${item.status === 1 ? window.i18n.statusOnline : window.i18n.statusOffline}
+                    </span>
+                </td>
+                <td>
+                <button class="btn btn-sm btn-info" onclick="showEditAliasModal(${item.amrId}, '${item.alias || ''}')">
+                    <i class="mdi mdi-pencil"></i> ${window.i18n.btnEdit}
+               </button>
+                </td>
+            </tr>
+            `;
+            });
+        } else {
+            html = '<tr><td colspan="5" class="text-center">' + window.i18n.msgNoData + '</td></tr>';
+        }
+        $('#dataTable').html(html);
+        // 取消全选状态
+        $('#selectAll').prop('checked', false);
+    }
+
+    // 显示编辑别名模态框
+    function showEditAliasModal(id, alias) {
+        $('#editAliasModalLabel').text(window.i18n.modalTitleEdit + ' - ID: ' + id);
+        $('#editId').val(id);
+        $('#alias').val(alias || '');
+        $('#editAliasModal').modal('show');
+    }
+
+    function saveAlias() {
+        const id = $('#editId').val();
+        const alias = $('#alias').val().trim();
+
+        if (!id) {
+            alert(window.i18n.msgInvalidId);
+            return;
+        }
+
+        $.ajax({
+            url: '/api/amr/table/update',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                amrId: id,
+                alias: alias.trim()
+            }),
+            success: function (res) {
+                if (res.code === 10000 || res === true) {
+                    alert(window.i18n.msgSaveSuccess)
+                    $('#editAliasModal').modal('hide');
+                    loadData()
+                } else {
+                    alert(res.msg || window.i18n.msgUpdateFailed);
+                }
+            },
+            error: function () {
+                alert(window.i18n.msgServerError);
+            }
+        });
+    }
+
+    // 分配权限函数
+    function addAmrRole() {
+        const selectedIds = [];
+        $('.row-checkbox:checked').each(function () {
+            selectedIds.push($(this).val());
+        });
+
+        if (selectedIds.length === 0) {
+            alert(window.i18n.msgSelectAtLeastOne);
+            return;
+        }
+
+        // 存储当前选中的任务链ID
+        $('#roleForm').data('selectedIds', selectedIds);
+
+        // 加载用户列表
+        loadUserList();
+
+        // 显示模态框
+        $('#addRoleModal').modal('show');
+    }
+
+    // 保存权限设置
+    function saveAmrRoles() {
+        const selectedIds = $('#roleForm').data('selectedIds');
+        const selectedUsers = $('#userSelect').val() || [];
+        const addType = $('input[name="addType"]:checked').val();
+
+        if (selectedUsers.length === 0) {
+            alert(window.i18n.msgSelectAtLeastOneUser);
+            return;
+        }
+
+        $.ajax({
+            url: '/api/amr/table/assignRoles',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                amrIds: selectedIds,
+                userIds: selectedUsers,
+                addType: addType
+            }),
+            success: function (res) {
+                if (res.code === 10000) {
+                    alert(window.i18n.msgPermissionAssignedSuccess);
+                    $('#addRoleModal').modal('hide');
+                } else {
+                    alert(res.msg || window.i18n.msgPermissionAssignmentFailed);
+                }
+            },
+            error: function () {
+                alert(window.i18n.msgServerError);
+            }
+        });
+    }
+
+    /*]]>*/
+</script>
+</body>
+</html>

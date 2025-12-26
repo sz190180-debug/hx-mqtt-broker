@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{page.title.error}">页面未找到 - 系统名称</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <style>
+        .error-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .error-actions {
+            margin-top: 30px;
+        }
+
+        .btn-home {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        .btn-home:hover {
+            background-color: #0069d9;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<div class="error-container">
+    <!-- 错误图标 -->
+    <div style="font-size: 72px; color: #dc3545;">
+        <i class="mdi mdi-alert-circle-outline"></i>
+    </div>
+
+    <!-- 错误标题 -->
+    <h1 th:text="${errorType == '500'} ? #{error.500.title} : (${errorType == '403'} ? #{error.403.title} : #{error.404.title})">404 - 页面未找到</h1>
+
+    <!-- 错误详情 -->
+    <div class="alert alert-warning" th:if="${originalUrl}">
+        <span th:utext="#{error.404.path.not.exist(${originalUrl})}">您访问的路径 <code th:text="${originalUrl}"></code> 不存在</span>
+    </div>
+
+    <!-- 错误消息 -->
+    <p th:text="${errorType == '500'} ? #{error.500.message} : (${errorType == '403'} ? #{error.403.message} : #{error.404.message})">抱歉，您请求的页面不存在或已被移除。</p>
+
+    <!-- 操作按钮 -->
+    <div class="error-actions">
+        <a class="btn-home" th:href="@{/index}">
+            <i class="mdi mdi-home"></i> <span th:text="#{error.btn.home}">返回首页</span>
+        </a>
+
+        <!-- 可选：返回上一页按钮 -->
+        <a class="btn-home" href="javascript:history.back()" style="background-color: #6c757d; margin-left: 10px;">
+            <i class="mdi mdi-arrow-left"></i> <span th:text="#{error.btn.back}">返回上一页</span>
+        </a>
+    </div>
+</div>
+
+<!-- 如果使用Material Design图标 -->
+<link rel="stylesheet" th:href="@{/css/materialdesignicons.min.css}">
+</body>
+</html>

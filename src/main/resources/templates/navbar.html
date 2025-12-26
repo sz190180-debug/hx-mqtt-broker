@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<!-- 定义导航栏片段 -->
+<aside class="hx-layout-sidebar" th:fragment="sidebar">
+    <div class="sidebar-header" id="logo">
+        <a href="" th:text="#{system.name}"> wms管理中心 </a>
+    </div>
+    <div class="hx-layout-sidebar-scroll">
+        <nav class="sidebar-main">
+            <ul class="nav nav-drawer">
+                <!-- 首页菜单（通过 Thymeleaf 判断当前页面） -->
+                <li class="nav-item"
+                    th:classappend="${#httpServletRequest.requestURI.endsWith('index')} ? 'active' : ''">
+                    <a href="index"><i class="mdi mdi-home"></i> <span th:text="#{nav.dashboard}">首页</span></a>
+                </li>
+
+                <!-- 系统管理菜单（父项 + 子项） -->
+                <li class="nav-item nav-item-has-subnav"
+                    th:classappend="${#httpServletRequest.requestURI.contains('config')
+                                  || #httpServletRequest.requestURI.contains('user')
+                                  || #httpServletRequest.requestURI.contains('map')
+                                  || #httpServletRequest.requestURI.contains('amr')
+                                 || #httpServletRequest.requestURI.contains('template')
+                                 || #httpServletRequest.requestURI.contains('warehouse')
+                                 || #httpServletRequest.requestURI.contains('machine')} ? 'active open' : ''">
+                    <a href="javascript:void(0)"><i class="mdi mdi-settings"></i> <span th:text="#{nav.system.management}">系统管理</span></a>
+                    <ul class="nav nav-subnav">
+                        <li th:classappend="${#httpServletRequest.requestURI.endsWith('config')}? 'active' : ''">
+                            <a href="config" th:text="#{nav.system.config}">系统设置</a>
+                        </li>
+                        <li th:classappend="${#httpServletRequest.requestURI.endsWith('amr')} ? 'active' : ''">
+                            <a href="amr" th:text="#{nav.amr.management}">在线车辆</a>
+                        </li>
+                        <li th:classappend="${
+                         #httpServletRequest.requestURI.contains('user')} ? 'active' : ''">
+                            <a href="user" th:text="#{nav.user.management}">客户端管理</a>
+                        </li>
+                        <li th:classappend="${#httpServletRequest.requestURI.endsWith('map')} ? 'active' : ''">
+                            <a href="map" th:text="#{nav.map.config}">点位设置</a>
+                        </li>
+                        <li th:classappend="${#httpServletRequest.requestURI.endsWith('template')} ? 'active' : ''">
+                            <a href="template" th:text="#{nav.template.config}">任务链设置</a>
+                        </li>
+                        <!-- 仓库管理菜单 -->
+                        <li th:classappend="${#httpServletRequest.requestURI.endsWith('warehouse')} ? 'active' : ''">
+                            <a href="warehouse"><i class="mdi mdi-warehouse"></i> <span th:text="#{nav.warehouse.management}">仓库管理</span></a>
+                        </li>
+                        <!-- 机台管理菜单 -->
+                        <li th:classappend="${#httpServletRequest.requestURI.endsWith('machine')} ? 'active' : ''">
+                            <a href="machine"><i class="mdi mdi-robot-industrial"></i> <span th:text="#{nav.machine.management}">机台管理</span></a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</aside>
+<script th:src="@{/js/jquery.min.js}" type="text/javascript"></script>
+<script th:src="@{/js/bootstrap.min.js}" type="text/javascript"></script>
+<script th:src="@{/js/perfect-scrollbar.min.js}" type="text/javascript"></script>
+<script th:src="@{/js/main.min.js}" type="text/javascript"></script>
+<script>
+    $(document).ready(function () {
+        // 1. 阻止父菜单点击时的默认折叠行为
+        $('.nav-item-has-subnav > a').on('click', function (e) {
+            e.preventDefault(); // 阻止默认跳转
+            $(this).parent('.nav-item-has-subnav').toggleClass('open'); // 手动切换展开状态
+        });
+
+        // 2. 页面加载时根据 URL 保持子菜单展开
+        const currentPath = window.location.pathname;
+        if (currentPath.includes('config') || currentPath.includes('map') || currentPath.includes('amr')) {
+            $('.nav-item-has-subnav').addClass('open');
+        }
+
+        // 3. 点击子菜单项时，强制保持父菜单展开
+        $('.nav-subnav a').on('click', function () {
+            $(this).closest('.nav-item-has-subnav').addClass('open');
+        });
+    });
+</script>
+</body>
+</html>

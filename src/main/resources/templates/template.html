@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{page.title.template}">任务链模板管理 - WMS管理中心</title>
+    <link rel="icon" th:href="@{/images/favicon.svg}" type="image/ico">
+    <link rel="stylesheet" th:href="@{/css/materialdesignicons.min.css}">
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.min.css}">
+    <style>
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .table th {
+            white-space: nowrap;
+        }
+
+        .btn-group-xs > .btn {
+            padding: 0.25rem 0.4rem;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            border-radius: 0.2rem;
+        }
+
+        .badge-priority {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .action-buttons {
+            white-space: nowrap;
+        }
+
+        .action-buttons .btn {
+            margin-right: 5px;
+        }
+
+        .action-buttons .btn:last-child {
+            margin-right: 0;
+        }
+
+        .task-chain-name {
+            font-weight: bold;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .loading-spinner {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .page-size-selector {
+            display: inline-block;
+            margin-left: 15px;
+        }
+
+        .page-size-selector label {
+            margin-right: 5px;
+            font-weight: normal;
+        }
+
+        .page-size-selector select {
+            width: 70px;
+            display: inline-block;
+        }
+
+        .batch-actions {
+            display: inline-block;
+            margin-left: 15px;
+        }
+
+        .batch-actions select {
+            width: 120px;
+            display: inline-block;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="hx-layout-web">
+    <!--左侧导航-->
+    <div th:replace="~{navbar :: sidebar}"></div>
+
+    <!-- 页面主要内容 -->
+    <main class="hx-layout-content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title" th:text="#{nav.template.management}">任务链模板管理</h4>
+                        </div>
+                        <div class="card-toolbar clearfix">
+                            <!-- 搜索框 -->
+                            <form class="pull-right search-bar" id="searchForm" role="form">
+                                <div class="input-group">
+                                    <input class="form-control" id="nameInput" name="name"
+                                           th:placeholder="#{placeholder.search.template.name}" placeholder="搜索模板名称"
+                                           type="text">
+                                    <div class="input-group-btn">
+                                        <button class="btn btn-primary" onclick="loadData(1)" type="button">
+                                            <i class="mdi mdi-magnify"></i> <span th:text="#{btn.search}">搜索</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <!-- 操作按钮区域 -->
+                            <div class="pull-left">
+                                <button class="btn btn-success" onclick="showAddModal()">
+                                    <i class="mdi mdi-plus"></i> <span th:text="#{btn.add.template}">添加模板</span>
+                                </button>
+                                <button class="btn btn-info" onclick="addTemplateRole()">
+                                    <i class="mdi mdi-refresh"></i> <span th:text="#{btn.assign.permission}">分配权限</span>
+                                </button>
+                                <button class="btn btn-warning" onclick="showBatchUpdateModal()">
+                                    <i class="mdi mdi-pencil"></i> <span th:text="#{btn.modify.type}">修改类型</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead class="thead-light">
+                                    <tr>
+                                        <th width="50"><input id="selectAll" type="checkbox"></th>
+                                        <th width="80" th:text="#{table.header.id}">ID</th>
+                                        <th th:text="#{table.header.template.name}">模板名称</th>
+                                        <th width="120" th:text="#{table.header.vehicle.id}">车辆ID</th>
+                                        <th width="120" th:text="#{table.header.area.id}">区域ID</th>
+                                        <th width="100" th:text="#{table.header.priority}">优先级</th>
+                                        <th width="100" th:text="#{table.header.task.chain.type}">任务链类型</th>  <!-- 新增列 -->
+                                        <th width="180" th:text="#{table.header.create.time}">创建时间</th>
+                                        <th width="120" th:text="#{table.header.repeat.flag}">重复标志</th>
+                                        <th width="150" th:text="#{table.header.operations}">操作</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="dataTable">
+                                    <!-- Data will be loaded dynamically via AJAX -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- 分页控件 -->
+                            <div class="text-center">
+                                <ul class="pagination" id="pagination"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 添加模板模态框 -->
+<div aria-hidden="true" aria-labelledby="addModalLabel" class="modal fade" id="addModal" role="dialog"
+     tabindex="-1">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><i class="mdi mdi-plus"></i> <span th:text="#{modal.title.add.template}">添加任务链模板</span></h4>
+            </div>
+            <div class="modal-body">
+                <form id="addForm">
+                    <div class="form-group">
+                        <label for="pageNumInput" th:text="#{form.label.template.page.number}">模板所在页码</label>
+                        <input class="form-control" id="pageNumInput" min="1"
+                               name="pageNum" th:placeholder="#{placeholder.enter.page.number}" placeholder="请输入页码" required type="number">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal" type="button" th:text="#{btn.cancel}">取消</button>
+                <button class="btn btn-primary" onclick="addTaskChain()" type="button" th:text="#{btn.add}">添加</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑模态框 -->
+<div aria-hidden="true" aria-labelledby="editAliasModalLabel" class="modal fade" id="editAliasModal" role="dialog"
+     tabindex="-1">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><i class="mdi mdi-plus"></i> <span th:text="#{modal.title.edit}">编辑</span></h4>
+            </div>
+            <div class="modal-body">
+                <form id="aliasForm">
+                    <input id="editId" type="hidden">
+                    <div class="form-group">
+                        <label for="alias" th:text="#{form.label.alias}">别名</label>
+                        <input class="form-control" id="alias" name="alias" required type="text">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal" type="button" th:text="#{btn.cancel}">取消</button>
+                <button class="btn btn-primary" onclick="saveAlias()" type="button" th:text="#{btn.save}">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 新增批量修改类型模态框 -->
+<div aria-hidden="true" aria-labelledby="batchUpdateModalLabel" class="modal fade" id="batchUpdateModal" role="dialog"
+     tabindex="-1">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><i class="mdi mdi-pencil-box-multiple"></i> <span th:text="#{modal.title.batch.modify.type}">批量修改任务链类型</span></h4>
+            </div>
+            <div class="modal-body">
+                <form id="batchUpdateForm">
+                    <div class="form-group">
+                        <label th:text="#{form.label.select.new.type}">选择新的任务链类型</label>
+                        <div>
+                            <label class="hx-radio radio-inline radio-primary">
+                                <input checked name="batchChainType" type="radio" value="0"><span th:text="#{form.option.normal}">普通</span>
+                            </label>
+                            <label class="hx-radio radio-inline radio-primary">
+                                <input name="batchChainType" type="radio" value="1"><span th:text="#{form.option.inbound}">入库</span>
+                            </label>
+                            <label class="hx-radio radio-inline radio-primary">
+                                <input name="batchChainType" type="radio" value="2"><span th:text="#{form.option.outbound}">出库</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="mdi mdi-information-outline"></i> <span th:text="#{alert.batch.modify.records}">将批量修改选中的</span> <span class="badge badge-primary"
+                                                                                           id="selectedCount">0</span> <span th:text="#{alert.batch.modify.records}">条记录</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal" type="button" th:text="#{btn.cancel}">取消</button>
+                <button class="btn btn-primary" onclick="batchUpdateChainType()" type="button" th:text="#{btn.confirm.modify}">确认修改</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 子任务列表模态框 -->
+<!-- 子任务列表模态框 - 修复后的结构 -->
+<div aria-hidden="true" aria-labelledby="subtasksModalLabel" class="modal fade" id="subtasksModal" role="dialog"
+     tabindex="-1">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="subtasksModalLabel"><i class="mdi mdi-view-list"></i> <span th:text="#{modal.title.subtask.list}">子任务列表</span></h4>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="thead-light">
+                        <tr>
+                            <th width="80" th:text="#{table.header.id}">ID</th>
+                            <th width="80" th:text="#{table.header.sequence}">序号</th>
+                            <th width="150" th:text="#{table.header.target.point.code}">目标点编码</th>
+                            <th width="100" th:text="#{table.header.map.id}">地图ID</th>
+                            <th width="100" th:text="#{table.header.task.type}">任务类型</th>
+                            <th width="100" th:text="#{table.header.loading.unloading}">上下料</th>
+                            <th width="120" th:text="#{table.header.docking.direction}">对接方向</th>
+                            <th width="120" th:text="#{table.header.docking.x.distance}">对接X距离</th>
+                            <th width="120" th:text="#{table.header.docking.y.distance}">对接Y距离</th>
+                        </tr>
+                        </thead>
+                        <tbody id="subtasksTable">
+                        <!-- Subtask data will be loaded dynamically via AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" data-dismiss="modal" type="button" th:text="#{btn.close}">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 加载遮罩 -->
+<div class="loading-overlay" id="loadingOverlay" style="display: none;">
+    <div class="loading-content">
+        <div class="loading-spinner">
+            <i class="mdi mdi-loading mdi-spin"></i>
+        </div>
+        <div id="loadingText" th:text="#{js.template.processing.please.wait}">正在处理，请稍候...</div>
+    </div>
+</div>
+
+<!-- 分配权限模态框 -->
+<div aria-hidden="true" aria-labelledby="addRoleModalLabel" class="modal fade" id="addRoleModal" role="dialog"
+     tabindex="-1">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><i class="mdi mdi-plus"></i> <span th:text="#{modal.title.assign.permission}">分配权限</span></h4>
+            </div>
+            <div class="modal-body">
+                <form id="roleForm">
+                    <div class="form-group">
+                        <label for="userSearch" th:text="#{form.label.select.user}">选择用户</label>
+                        <div class="input-group">
+                            <input class="form-control" id="userSearch" th:placeholder="#{placeholder.search.user.shift.multi}" placeholder="搜索用户,shift多选" type="text">
+                            <div class="input-group-btn">
+                                <button class="btn btn-primary" onclick="searchUsers()" type="button">
+                                    <i class="mdi mdi-magnify"></i> <span th:text="#{btn.search}">搜索</span>
+                                </button>
+                            </div>
+                        </div>
+                        <select class="form-control m-t-10" id="userSelect" multiple style="height: 100px;">
+                            <!-- User list will be loaded dynamically via AJAX -->
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="warehouseGroup">
+                        <label for="warehouseSelect" id="warehouseLabel"><span th:text="#{form.label.select.warehouse}">选择仓库</span> <span class="text-danger">*</span></label>
+                        <select class="form-control" id="warehouseSelect" onchange="loadWarehouseColumns()">
+                            <option value="" th:text="#{placeholder.select.warehouse}">请选择仓库</option>
+                            <!-- Warehouse list will be loaded dynamically via AJAX -->
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="columnGroup">
+                        <label for="columnSelect" th:text="#{form.label.select.column}">选择库位列</label>
+                        <select class="form-control" id="columnSelect">
+                            <option value="" th:text="#{placeholder.select.column.optional}">请选择库位列（可选）</option>
+                            <!-- Column list will be loaded dynamically based on selected warehouse -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label th:text="#{form.label.add.method}">添加方式</label>
+                        <div>
+                            <label class="hx-radio radio-inline radio-primary">
+                                <input id="addTypeAppend" name="addType" type="radio"
+                                       value="1"><span th:text="#{form.option.append.permission}">追加新权限</span>
+                            </label>
+                            <label class="hx-radio radio-inline radio-primary">
+                                <input id="addTypeReplace" name="addType" type="radio"
+                                       value="2"><span th:text="#{form.option.replace.permission}">替换现有权限</span>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal" type="button" th:text="#{btn.cancel}">取消</button>
+                <button class="btn btn-primary" onclick="saveTemplateRoles()" type="button" th:text="#{btn.save}">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/jquery.min.js}"></script>
+<script th:src="@{/js/bootstrap.min.js}"></script>
+<script th:src="@{/js/perfect-scrollbar.min.js}"></script>
+<script th:src="@{/js/main.min.js}"></script>
+<script th:src="@{/js/project/searchUser.js}"></script>
+<script th:src="@{/js/project/pagination.js}"></script>
+<script th:inline="javascript">
+    // I18n messages for JavaScript
+    window.templateI18n = {
+        loading: [[#{js.template.loading}]],
+        noData: [[#{js.template.no.data}]],
+        requestFailed: [[#{js.template.request.failed}]],
+        serverError: [[#{js.template.server.error}]],
+        enterValidPage: [[#{js.template.enter.valid.page}]],
+        addingTemplate: [[#{js.template.adding.template}]],
+        addSuccess: [[#{js.template.add.success}]],
+        addFailed: [[#{js.template.add.failed}]],
+        selectAtLeastOne: [[#{js.template.select.at.least.one}]],
+        selectAtLeastOneUser: [[#{js.template.select.at.least.one.user}]],
+        selectWarehouseForInboundOutbound: [[#{js.template.select.warehouse.for.inbound.outbound}]],
+        permissionAssignSuccess: [[#{js.template.permission.assign.success}]],
+        permissionAssignFailed: [[#{js.template.permission.assign.failed}]],
+        loadWarehouseListFailed: [[#{js.template.load.warehouse.list.failed}]],
+        loadColumnFailed: [[#{js.template.load.column.failed}]],
+        invalidId: [[#{js.template.invalid.id}]],
+        saveSuccess: [[#{js.template.save.success}]],
+        saveFailed: [[#{js.template.save.failed}]],
+        getSubtaskFailed: [[#{js.template.get.subtask.failed}]],
+        noSubtaskData: [[#{js.template.no.subtask.data}]],
+        batchUpdatingType: [[#{js.template.batch.updating.type}]],
+        batchUpdateSuccess: [[#{js.template.batch.update.success}]],
+        batchUpdateFailed: [[#{js.template.batch.update.failed}]],
+        processingPleaseWait: [[#{js.template.processing.please.wait}]],
+        normal: [[#{js.template.normal}]],
+        inbound: [[#{js.template.inbound}]],
+        outbound: [[#{js.template.outbound}]],
+        yes: [[#{js.template.yes}]],
+        no: [[#{js.template.no}]],
+        edit: [[#{js.template.edit}]],
+        subtask: [[#{js.template.subtask}]],
+        aliasPrefix: [[#{js.template.alias.prefix}]],
+        editIdPrefix: [[#{js.template.edit.id.prefix}]],
+        subtaskListIdPrefix: [[#{js.template.subtask.list.id.prefix}]]
+    };
+
+    // 全局变量存储当前分页大小
+    let currentPageSize = 10;
+    let currentPage = 1;
+
+    $(document).ready(function () {
+        loadData(1);
+
+        // 初始化时隐藏仓库和库位列选择字段
+        $('#warehouseGroup').hide();
+        $('#columnGroup').hide();
+
+        // 回车键触发搜索
+        $('#nameInput').keypress(function (e) {
+            if (e.which === 13) {
+                loadData(1);
+                return false;
+            }
+        });
+
+        // 全选/取消全选
+        $('#selectAll').click(function () {
+            $('.row-checkbox').prop('checked', this.checked);
+        });
+    });
+
+    // 加载数据
+    function loadData(pageNum) {
+        currentPage = pageNum || 1;  // 更新当前页码
+        const params = {
+            pageNum: currentPage,
+            pageSize: currentPageSize,
+            name: $('#nameInput').val().trim()
+        };
+
+        showLoading();
+        $.ajax({
+            url: '/api/task/chain/list',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(params),
+            success: function (res) {
+                hideLoading();
+                if (res.code === 10000) {
+                    renderTable(res.data);
+                    renderPagination(res.data);
+                } else {
+                    alert(res.msg || window.templateI18n.requestFailed);
+                }
+            },
+            error: function () {
+                hideLoading();
+                alert(window.templateI18n.serverError);
+            }
+        });
+    }
+
+    // 显示加载状态
+    function showLoading() {
+        $('#dataTable').html('<tr><td colspan="10" class="text-center"><i class="mdi mdi-loading mdi-spin"></i> ' + window.templateI18n.loading + '</td></tr>');
+        $('#pagination').html(''); // 清空分页
+        $('.btn').prop('disabled', true); // 禁用所有按钮防止重复操作
+    }
+
+    // 隐藏加载状态
+    function hideLoading() {
+        $('.btn').prop('disabled', false); // 重新启用所有按钮
+    }
+
+    // 显示添加模态框
+    function showAddModal() {
+        $('#addForm')[0].reset();
+        $('#addModal').modal('show');
+    }
+
+    // 显示加载遮罩
+    function showLoadingOverlay(text) {
+        if (text) {
+            $('#loadingText').text(text);
+        }
+        $('#loadingOverlay').show();
+        $('body').css('overflow', 'hidden');
+    }
+
+    // 隐藏加载遮罩
+    function hideLoadingOverlay() {
+        $('#loadingOverlay').hide();
+        $('body').css('overflow', 'auto');
+    }
+
+    // 渲染表格
+    function renderTable(pageData) {
+        let html = '';
+        if (pageData.records && pageData.records.length > 0) {
+            pageData.records.forEach(item => {
+                // 根据chainType值显示不同的文本
+                let chainTypeText = window.templateI18n.normal;
+                let chainTypeClass = 'badge-secondary';
+                if (item.chainType === 1) {
+                    chainTypeText = window.templateI18n.inbound;
+                    chainTypeClass = 'badge-primary';
+                } else if (item.chainType === 2) {
+                    chainTypeText = window.templateI18n.outbound;
+                    chainTypeClass = 'badge-info';
+                }
+
+                html += `
+                <tr>
+                    <td><input type="checkbox" class="row-checkbox" value="${item.id}"></td>
+                    <td>${item.id}</td>
+                    <td>
+                        <span class="task-chain-name">${item.name || ''}</span>
+                        ${item.alias ? '<br><small>' + window.templateI18n.aliasPrefix + ' ' + item.alias + '</small>' : ''}
+                        <br>
+                    </td>
+                    <td>${item.amrId || '-'}</td>
+                    <td>${item.areaId || '-'}</td>
+                    <td><span class="badge badge-priority">${item.priority || 0}</span></td>
+                    <td><span class="badge ${chainTypeClass}">${chainTypeText}</span></td>
+                    <td>${formatDateTime(item.createTime)}</td>
+                    <td>${item.repeatFlag ? window.templateI18n.yes : window.templateI18n.no}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm btn-info" onclick="showEditAliasModal(${item.id}, '${item.alias || ''}')">
+                            <i class="mdi mdi-pencil"></i> ${window.templateI18n.edit}
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="showSubtasks(${item.id})">
+                            <i class="mdi mdi-view-list"></i> ${window.templateI18n.subtask}
+                        </button>
+                    </td>
+                </tr>
+                `;
+            });
+        } else {
+            html = '<tr><td colspan="10" class="text-center">' + window.templateI18n.noData + '</td></tr>';
+        }
+        $('#dataTable').html(html);
+        // 取消全选状态
+        $('#selectAll').prop('checked', false);
+    }
+
+    // 格式化日期时间
+    function formatDateTime(timestamp) {
+        if (!timestamp) return '-';
+        const date = new Date(timestamp);
+        return date.toLocaleString();
+    }
+
+    // 添加任务链模板
+    function addTaskChain() {
+        const pageNum = $('#pageNumInput').val();
+
+        if (!pageNum || isNaN(pageNum) || pageNum < 1) {
+            alert(window.templateI18n.enterValidPage);
+            return;
+        }
+
+        // 显示加载状态
+        showLoadingOverlay(window.templateI18n.addingTemplate);
+        $('#addModal').modal('hide');
+
+        // 禁用添加按钮防止重复点击
+        $('.btn-success').prop('disabled', true);
+
+        $.ajax({
+            url: '/api/task/chain/add',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({currentPage: parseInt(pageNum)}),
+            success: function (res) {
+                // 显示添加成功提示
+                $('#loadingText').text(window.templateI18n.addSuccess);
+
+                // 延迟1秒后执行
+                setTimeout(function () {
+                    hideLoadingOverlay();
+                    $('.btn-success').prop('disabled', false);
+
+                    if (res.code === 10000) {
+                        loadData(1);
+                    } else {
+                        alert(res.msg || window.templateI18n.addFailed);
+                    }
+                }, 1000);
+            },
+            error: function () {
+                hideLoadingOverlay();
+                $('.btn-success').prop('disabled', false);
+                alert(window.templateI18n.serverError);
+            }
+        });
+    }
+
+    // 分配权限函数
+    function addTemplateRole() {
+        const selectedIds = [];
+        const selectedChainTypes = [];
+        $('.row-checkbox:checked').each(function () {
+            const id = $(this).val();
+            selectedIds.push(id);
+            // 从表格行中获取任务链类型
+            const row = $(this).closest('tr');
+            const chainTypeBadge = row.find('td:nth-child(7) .badge');
+            let chainType = 0; // 默认普通类型
+            if (chainTypeBadge.hasClass('badge-primary')) {
+                chainType = 1; // 入库
+            } else if (chainTypeBadge.hasClass('badge-info')) {
+                chainType = 2; // 出库
+            }
+            selectedChainTypes.push(chainType);
+        });
+
+        if (selectedIds.length === 0) {
+            alert(window.templateI18n.selectAtLeastOne);
+            return;
+        }
+
+        // 存储当前选中的任务链ID和类型
+        $('#roleForm').data('selectedIds', selectedIds);
+        $('#roleForm').data('selectedChainTypes', selectedChainTypes);
+
+        // 检查是否需要仓库信息
+        const requiresWarehouse = selectedChainTypes.some(type => type === 1 || type === 2);
+
+        // 根据任务链类型显示/隐藏仓库选择字段和库位列选择字段
+        if (requiresWarehouse) {
+            $('#warehouseGroup').show();
+            $('#columnGroup').show();
+            $('#warehouseSelect').attr('required', true);
+            $('#warehouseLabel').html($('#warehouseLabel span:first').text() + ' <span class="text-danger">*</span>');
+        } else {
+            $('#warehouseGroup').hide();
+            $('#columnGroup').hide();
+            $('#warehouseSelect').removeAttr('required');
+            $('#warehouseSelect').val('');
+            $('#columnSelect').val('');
+        }
+
+        // 加载用户列表
+        loadUserList();
+
+        // 如果需要仓库信息，加载仓库列表
+        if (requiresWarehouse) {
+            loadWarehouseList();
+        }
+
+        // 显示模态框
+        $('#addRoleModal').modal('show');
+    }
+
+    // 保存权限设置
+    function saveTemplateRoles() {
+        const selectedIds = $('#roleForm').data('selectedIds');
+        const selectedChainTypes = $('#roleForm').data('selectedChainTypes');
+        const selectedUsers = $('#userSelect').val() || [];
+        const addType = $('input[name="addType"]:checked').val();
+        const warehouseId = $('#warehouseSelect').val();
+        const columnId = $('#columnSelect').val();
+
+        if (selectedUsers.length === 0) {
+            alert(window.templateI18n.selectAtLeastOneUser);
+            return;
+        }
+
+        // 检查是否需要仓库信息
+        const requiresWarehouse = selectedChainTypes.some(type => type === 1 || type === 2);
+        if (requiresWarehouse && !warehouseId) {
+            alert(window.templateI18n.selectWarehouseForInboundOutbound);
+            return;
+        }
+
+        $.ajax({
+            url: '/api/task/chain/assignRoles',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                taskChainIds: selectedIds,
+                userIds: selectedUsers,
+                addType: addType,
+                warehouseId: warehouseId || null,
+                columnId: columnId || null
+            }),
+            success: function (res) {
+                if (res.code === 10000) {
+                    alert(window.templateI18n.permissionAssignSuccess);
+                    $('#addRoleModal').modal('hide');
+                } else {
+                    alert(res.msg || window.templateI18n.permissionAssignFailed);
+                }
+            },
+            error: function () {
+                alert(window.templateI18n.serverError);
+            }
+        });
+    }
+
+    // 加载仓库列表
+    function loadWarehouseList() {
+        $.ajax({
+            url: '/api/warehouse/all',
+            type: 'GET',
+            success: function (response) {
+                if (response.code === 10000 && response.data) {
+                    const warehouseSelect = $('#warehouseSelect');
+                    warehouseSelect.empty();
+                    warehouseSelect.append('<option value="">' + $('#warehouseSelect option[value=""]').text() + '</option>');
+
+                    response.data.forEach(warehouse => {
+                        warehouseSelect.append(`<option value="${warehouse.warehouseId}">${warehouse.warehouseName}</option>`);
+                    });
+                } else {
+                    alert(response.msg || window.templateI18n.loadWarehouseListFailed);
+                }
+            },
+            error: function () {
+                alert(window.templateI18n.loadWarehouseListFailed);
+            }
+        });
+    }
+
+    // 加载库位列列表
+    function loadWarehouseColumns() {
+        const warehouseId = $('#warehouseSelect').val();
+        const columnSelect = $('#columnSelect');
+
+        // 清空库位列选择
+        columnSelect.empty();
+        columnSelect.append('<option value="">' + $('#columnSelect option[value=""]').text() + '</option>');
+
+        if (!warehouseId) {
+            return;
+        }
+
+        $.ajax({
+            url: `/api/warehouse/column/list/${warehouseId}`,
+            type: 'GET',
+            success: function (response) {
+                if (response.code === 10000 && response.data) {
+                    response.data.forEach(column => {
+                        columnSelect.append(`<option value="${column.columnId}">${column.columnName}</option>`);
+                    });
+                } else {
+                    console.warn('加载库位列失败:', response.msg);
+                }
+            },
+            error: function () {
+                console.warn('加载库位列失败');
+            }
+        });
+    }
+
+    // 显示编辑别名模态框
+    function showEditAliasModal(id, alias) {
+        $('#editAliasModalLabel').text(window.templateI18n.editIdPrefix + ' ' + id);
+        $('#editId').val(id);
+        $('#alias').val(alias || '');
+        $('#editAliasModal').modal('show');
+    }
+
+    // 保存别名
+    function saveAlias() {
+        const id = $('#editId').val();
+        const alias = $('#alias').val().trim();
+
+        if (!id) {
+            alert(window.templateI18n.invalidId);
+            return;
+        }
+
+        $.ajax({
+            url: '/api/task/chain/update',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                id: id,
+                alias: alias
+            }),
+            success: function (res) {
+                if (res.code === 10000) {
+                    alert(window.templateI18n.saveSuccess);
+                    $('#editAliasModal').modal('hide');
+                    loadData(currentPage);
+                } else {
+                    alert(res.msg || window.templateI18n.saveFailed);
+                }
+            },
+            error: function () {
+                alert(window.templateI18n.serverError);
+            }
+        });
+    }
+
+    // 显示子任务列表
+    function showSubtasks(taskChainTemplateId) {
+        $.ajax({
+            url: '/api/task/chain/subtasks/' + taskChainTemplateId,
+            type: 'GET',
+            beforeSend: function () {
+                $('#subtasksTable').html('<tr><td colspan="9" class="text-center"><i class="mdi mdi-loading mdi-spin"></i> ' + window.templateI18n.loading + '</td></tr>');
+            },
+            success: function (res) {
+                if (res.code === 10000) {
+                    $('#subtasksModalLabel').text(window.templateI18n.subtaskListIdPrefix + ' ' + taskChainTemplateId);
+                    renderSubtasksTable(res.data);
+                    $('#subtasksModal').modal('show');
+                } else {
+                    alert(res.msg || window.templateI18n.getSubtaskFailed);
+                }
+            },
+            error: function () {
+                alert(window.templateI18n.serverError);
+            }
+        });
+    }
+
+    // 渲染子任务表格
+    function renderSubtasksTable(subtasks) {
+        let html = '';
+        if (subtasks && subtasks.length > 0) {
+            subtasks.forEach(item => {
+                html += `
+                <tr>
+                    <td>${item.id}</td>
+                    <td>${item.sequence || 0}</td>
+                    <td>${item.endPointCode || ''}</td>
+                    <td>${item.mapId || ''}</td>
+                    <td>${item.taskType || ''}</td>
+                    <td>${item.loading || '-'}</td>
+                    <td>${item.dockingDirection || '-'}</td>
+                    <td>${item.dockingX || '-'}</td>
+                    <td>${item.dockingY || '-'}</td>
+                </tr>
+                `;
+            });
+        } else {
+            html = '<tr><td colspan="9" class="text-center">' + window.templateI18n.noSubtaskData + '</td></tr>';
+        }
+        $('#subtasksTable').html(html);
+    }
+
+    // 显示批量修改模态框
+    function showBatchUpdateModal() {
+        const selectedIds = getSelectedIds();
+
+        if (selectedIds.length === 0) {
+            alert(window.templateI18n.selectAtLeastOne);
+            return;
+        }
+
+        $('#selectedCount').text(selectedIds.length);
+        $('#batchUpdateModal').modal('show');
+    }
+
+    // 获取选中的ID数组
+    function getSelectedIds() {
+        const selectedIds = [];
+        $('.row-checkbox:checked').each(function () {
+            selectedIds.push($(this).val());
+        });
+        return selectedIds;
+    }
+
+    // 批量更新任务链类型
+    function batchUpdateChainType() {
+        const selectedIds = getSelectedIds();
+        const chainType = $('input[name="batchChainType"]:checked').val();
+
+        if (selectedIds.length === 0) {
+            alert(window.templateI18n.selectAtLeastOne);
+            return;
+        }
+
+        showLoadingOverlay(window.templateI18n.batchUpdatingType);
+
+        $.ajax({
+            url: '/api/task/chain/batchUpdateType',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                ids: selectedIds,
+                chainType: parseInt(chainType)
+            }),
+            success: function (res) {
+                hideLoadingOverlay();
+                if (res.code === 10000) {
+                    alert(window.templateI18n.batchUpdateSuccess);
+                    $('#batchUpdateModal').modal('hide');
+                    loadData(currentPage); // 刷新当前页
+                } else {
+                    alert(res.msg || window.templateI18n.batchUpdateFailed);
+                }
+            },
+            error: function () {
+                hideLoadingOverlay();
+                alert(window.templateI18n.serverError);
+            }
+        });
+    }
+
+    /*]]>*/
+</script>
+</body>
+</html>

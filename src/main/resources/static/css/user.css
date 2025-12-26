@@ -1,0 +1,208 @@
+.tab-pane.active {
+    padding-top: 20px;
+}
+
+.card-toolbar {
+    padding: 0 !important;
+}
+
+.card-toolbar .search-bar {
+    max-width: 400px;
+}
+
+/* 添加对话框样式 */
+#addUserModal .modal-dialog,
+#editUserModal .modal-dialog {
+    max-width: 500px;
+}
+
+#addUserModal .form-group,
+#editUserModal .form-group {
+    margin-bottom: 15px;
+}
+
+#addUserModal .form-control,
+#editUserModal .form-control {
+    height: 38px;
+}
+
+.action-buttons .btn {
+    margin-right: 5px;
+}
+
+/* 密码输入框组样式 */
+.password-input-group {
+    position: relative;
+    display: flex;
+    width: 100%;
+}
+
+.password-input-group .form-control {
+    width: 100%;
+    border-radius: 4px;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 38px;
+    width: 40px;
+    background: transparent;
+    border: none;
+    border-left: 1px solid #ced4da;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    z-index: 5;
+}
+
+.password-toggle-btn:hover {
+    color: #495057;
+}
+
+.password-toggle-btn:focus {
+    outline: none;
+}
+
+.password-input-group .form-control {
+    padding-right: 40px;
+}
+
+/* 按钮图标样式调整 */
+.mdi-eye, .mdi-eye-off {
+    font-size: 18px;
+}
+
+/* 排序相关样式 - Bootstrap 3.3.7 兼容 */
+.sort-input {
+    text-align: center;
+    min-width: 60px;
+}
+
+.batch-sort-input {
+    width: 80px;
+    text-align: center;
+    margin: 0 auto;
+}
+
+/* 表格中的输入组样式 */
+.table .input-group-sm {
+    display: table;
+}
+
+.table .input-group-sm .form-control {
+    height: 26px;
+    padding: 2px 6px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.table .input-group-sm .btn {
+    height: 26px;
+    padding: 2px 6px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* 排序控制区域样式 */
+.form-inline .form-group {
+    margin-right: 15px;
+}
+
+/* 批量排序模态框样式 */
+#batchSortModal .table th,
+#batchSortModal .table td {
+    vertical-align: middle;
+    text-align: center;
+}
+
+#batchSortModal .batch-sort-input {
+    display: block;
+    margin: 0 auto;
+}
+
+/* 按钮组间距 */
+.btn-group .btn {
+    margin-left: 0;
+}
+
+/* 表格排序列样式 */
+.table td .input-group {
+    margin-bottom: 0;
+}
+
+/* 排序区域布局优化 */
+.sort-controls {
+    margin: 15px 0;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+}
+
+/* 仓库权限管理样式 */
+.checkbox-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #fafafa;
+}
+
+.checkbox-list .checkbox {
+    margin-bottom: 8px;
+}
+
+.checkbox-list .checkbox:last-child {
+    margin-bottom: 0;
+}
+
+#warehouseModal .modal-dialog {
+    width: 800px;
+}
+
+#assignWarehouseModal .modal-dialog {
+    width: 500px;
+}
+
+.warehouse-permission-checkbox {
+    margin-right: 5px;
+}
+
+/* 与任务链设置风格统一的按钮样式 */
+.card-toolbar .btn {
+    margin-right: 5px;
+}
+
+.card-toolbar .btn:last-child {
+    margin-right: 0;
+}
+
+/* 表格样式优化 */
+.table-responsive {
+    margin-top: 15px;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* 模态框标题图标样式 */
+.modal-title i {
+    margin-right: 8px;
+    color: #337ab7;
+}
+
+/* 单选按钮样式优化 */
+.hx-radio {
+    margin-right: 15px;
+}
+
+.text-muted {
+    font-size: 12px;
+    margin-top: 5px;
+}

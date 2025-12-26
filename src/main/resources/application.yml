@@ -1,0 +1,70 @@
+server:
+  address: 0.0.0.0
+  port: 8088
+  ws-port: 1884
+mqtt:
+  broker:
+    port: 1883             # MQTT Broker端口
+    host: 0.0.0.0          # 监听地址
+  client:
+    server-uri: tcp://localhost:1883  # 客户端连接的Broker地址，部署需要修改为服务器ip
+    async: true                       # 是否异步发送
+
+spring:
+  security:
+    user:
+      # 用户名
+      name: admin
+      # 密码
+      password: admin123
+  datasource:
+    url: jdbc:h2:file:~/hx_mqtt;MODE=MySQL # 文件模式（持久化）
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 7FunzLnsCFH8ZwQE3LTV
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+  sql:
+    init:
+      mode: never
+  thymeleaf:
+    cache: false # 开发时关闭缓存
+    prefix: classpath:/templates/ # 显式指定路径
+    check-template-location: true
+  messages:
+    basename: messages
+    encoding: UTF-8
+    cache-duration: 3600
+  web:
+    locale: zh #中文zh 英文en
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.hx.mqtt.domain.entity
+  global-config:
+    db-config:
+      id-type: auto
+  configuration:
+    map-underscore-to-camel-case: true
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+# 机台控制配置
+machine:
+  control:
+    enabled: true
+    modbus:
+      default-ip: 192.168.3.86
+      default-port: 502
+      default-unit-id: 1
+      connect-timeout: 3000
+      read-timeout: 5000
+      max-connections: 50
+    schedule:
+      control-signal-interval: 5000    # 控制信号检测间隔（毫秒）
+      state-cleanup-interval: 60000    # 状态清理间隔（毫秒）
+      state-timeout: 300000            # 状态超时时间（毫秒）

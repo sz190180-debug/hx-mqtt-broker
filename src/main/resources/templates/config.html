@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport"/>
+    <title th:text="#{page.title.config}">配置 - wms管理中心</title>
+    <link rel="icon" th:href="@{/images/favicon.svg}" type="image/ico">
+    <link rel="stylesheet" th:href="@{/css/materialdesignicons.min.css}">
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.min.css}">
+</head>
+
+<body>
+<div class="hx-layout-web">
+    <div class="hx-layout-container">
+        <!--左侧导航-->
+        <div th:replace="~{navbar :: sidebar}"></div>
+        <!--End 左侧导航-->
+
+        <!--头部信息-->
+        <header class="hx-layout-header">
+
+        </header>
+        <!--End 头部信息-->
+
+        <!--页面主要内容-->
+        <main class="hx-layout-content">
+
+            <div class="container-fluid">
+
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="card">
+                            <ul class="nav nav-tabs">
+                                <li class="active"><a href="#!" th:text="#{nav.system.config}">配置</a></li>
+                            </ul>
+                            <div class="tab-content">
+                                <div class="tab-pane active">
+                                    <!-- 修改表单的th:action属性，与后端API路径一致 -->
+                                    <form class="edit-form" id="rcsConfigForm" method="post"
+                                          th:action="@{/api/rcs/add}"
+                                          th:object="${rcsAddReq}">
+                                        <div class="form-group">
+                                            <label for="rcs_ip" th:text="#{config.rcs.ip}">RCS地址</label>
+                                            <input class="form-control" id="rcs_ip" name="ip"
+                                                   th:placeholder="#{placeholder.enter.ip}" placeholder="请输入ip地址" th:value="${rcsConfig?.ip ?: ''}"
+                                                   type="text">
+                                            <small class="help-block" th:utext="#{help.ip.only}">只填ip,默认只支持<code>http协议</code></small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="rcs_port" th:text="#{config.rcs.port}">RCS端口</label>
+                                            <input class="form-control" id="rcs_port" name="port"
+                                                   th:placeholder="#{placeholder.enter.port}" placeholder="请输入端口"
+                                                   th:value="${rcsConfig?.port ?: ''}" type="text">
+                                            <small class="help-block" th:utext="#{help.port.http}">默认只支持<code>http协议</code></small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="rcs_token" th:text="#{config.rcs.token}">RCS Header token</label>
+                                            <input class="form-control" id="rcs_token" name="token"
+                                                   th:placeholder="#{placeholder.enter.token}" placeholder="请输入token"
+                                                   th:value="${rcsConfig?.token ?: ''}"
+                                                   type="text">
+                                            <small class="help-block" th:utext="#{help.token.header}">请求头中配置的<code>token</code></small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="rcs_name" th:text="#{config.rcs.name}">RCS Header name</label>
+                                            <input class="form-control" id="rcs_name" name="name"
+                                                   th:placeholder="#{placeholder.enter.name}" placeholder="请输入name"
+                                                   th:value="${rcsConfig?.name ?: ''}"
+                                                   type="text">
+                                            <small class="help-block" th:utext="#{help.name.header}">请求头中配置的<code>name</code></small>
+                                        </div>
+                                        <div class="form-group">
+                                            <button class="btn btn-primary m-r-5" type="submit" th:text="#{btn.confirm}">确 定</button>
+                                            <button class="btn btn-default" onclick="history.back(-1);return false;"
+                                                    type="button" th:text="#{btn.back}">返 回
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!--End 页面主要内容-->
+    </div>
+</div>
+
+<script th:src="@{/js/jquery.min.js}" type="text/javascript"></script>
+<script th:src="@{/js/bootstrap.min.js}" type="text/javascript"></script>
+<script th:src="@{/js/perfect-scrollbar.min.js}" type="text/javascript"></script>
+<script th:src="@{/js/main.min.js}" type="text/javascript"></script>
+<script th:inline="javascript">
+    // I18n messages for JavaScript
+    window.configI18n = {
+        validationIpPortRequired: /*[[#{validation.ip.port.required}]]*/ 'RCS地址和端口为必填项',
+        msgConfigSaveSuccess: /*[[#{msg.config.save.success}]]*/ '配置保存成功',
+        msgConfigSaveFailed: /*[[#{msg.config.save.failed}]]*/ '保存失败',
+        msgServerErrorStatus: /*[[#{msg.server.error.status}]]*/ '服务器错误: {0}'
+    };
+</script>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        // 表单提交处理
+        $('#rcsConfigForm').submit(function (e) {
+            e.preventDefault();
+
+            // 收集表单数据
+            const formData = {
+                ip: $('#rcs_ip').val(),
+                port: $('#rcs_port').val(),
+                token: $('#rcs_token').val(),
+                name: $('#rcs_name').val()
+            };
+
+            // 前端验证
+            if (!formData.ip || !formData.port) {
+                alert(window.configI18n.validationIpPortRequired);
+                return;
+            }
+
+            // AJAX提交
+            $.ajax({
+                url: '/api/rcs/add', // 与后端API一致
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function (response) {
+                    if (response.code === 10000) {
+                        alert(window.configI18n.msgConfigSaveSuccess);
+                        loadRcsConfig(); // 重新加载数据
+                    } else {
+                        alert(response.msg || window.configI18n.msgConfigSaveFailed);
+                    }
+                },
+                error: function (xhr) {
+                    alert(window.configI18n.msgServerErrorStatus.replace('{0}', xhr.status));
+                }
+            });
+        });
+
+        // 加载已有配置
+        function loadRcsConfig() {
+            $.get('/api/rcs/select', function (response) {
+                if (response.code === 10000 && response.data) {
+                    $('#rcs_ip').val(response.data.ip || '');
+                    $('#rcs_port').val(response.data.port || '');
+                    $('#rcs_token').val(response.data.token || '');
+                    $('#rcs_name').val(response.data.name || '');
+                }
+            });
+        }
+
+        // 页面加载时获取配置
+        loadRcsConfig();
+    });
+</script>
+</body>
+</html>

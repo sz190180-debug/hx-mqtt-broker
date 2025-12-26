@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{page.title.map}">地图点位管理 - wms管理中心</title>
+    <link rel="icon" th:href="@{/images/favicon.svg}" type="image/ico">
+    <link rel="stylesheet" th:href="@{/css/materialdesignicons.min.css}">
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.min.css}">
+    <style>
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .input-group-append {
+            padding-top: 50px !important;
+        }
+
+        .table th {
+            white-space: nowrap;
+        }
+
+        .btn-group-xs > .btn {
+            padding: 0.25rem 0.4rem;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            border-radius: 0.2rem;
+        }
+
+        .badge-type {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .badge-loading {
+            background-color: #17a2b8;
+        }
+
+        .badge-direction {
+            background-color: #28a745;
+        }
+
+        .action-buttons {
+            white-space: nowrap;
+        }
+
+        .action-buttons .btn {
+            margin-right: 5px;
+        }
+
+        .action-buttons .btn:last-child {
+            margin-right: 0;
+        }
+
+        .batch-operations {
+            border-top: 1px solid #dee2e6;
+            padding-top: 15px;
+        }
+
+        .vertex-checkbox {
+            cursor: pointer;
+        }
+
+        #selectAll {
+            cursor: pointer;
+        }
+
+        .badge-success {
+            background-color: #28a745;
+        }
+
+        .badge-secondary {
+            background-color: #6c757d;
+        }
+
+    </style>
+</head>
+<body>
+<div class="hx-layout-web">
+    <!-- Left Navigation -->
+    <div th:replace="~{navbar :: sidebar}"></div>
+
+    <!-- Main Page Content -->
+    <main class="hx-layout-content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title" th:text="#{nav.map.management}">地图点位管理</h4>
+                        </div>
+                        <div class="card-toolbar clearfix">
+                            <!-- Search Box -->
+                            <form class="pull-right search-bar" id="searchForm" role="form">
+                                <input name="mapId" th:value="${mapId}" type="hidden">
+                                <div class="input-group">
+                                    <input class="form-control" id="mapCodeInput" name="code"
+                                           th:placeholder="#{placeholder.search.point.name}" placeholder="搜索点位名称"
+                                           th:value="${code}" type="text">
+                                    <div class="input-group-btn">
+                                        <button class="btn btn-primary" onclick="loadData(1)" type="button">
+                                            <i class="mdi mdi-magnify"></i> <span th:text="#{btn.search}">搜索</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <!-- Map ID Control Area -->
+                            <div class="map-id-controls">
+                                <div class="input-group">
+                                    <select class="form-control" id="mapIdSelect" onchange="onMapIdChange()">
+                                        <option value="" th:text="#{js.map.loading}">加载中...</option>
+                                    </select>
+                                    <div class="input-group-append">
+                                        <button class="btn btn-info" onclick="updateMap()">
+                                            <i class="mdi mdi-refresh"></i> <span th:text="#{btn.update}">更新</span>
+                                        </button>
+                                        <button class="btn btn-success" onclick="addMap()">
+                                            <i class="mdi mdi-plus"></i> <span th:text="#{btn.add}">添加</span>
+                                        </button>
+                                        <button class="btn btn-danger" onclick="deleteMap()">
+                                            <i class="mdi mdi-delete"></i> <span th:text="#{btn.delete}">删除</span>
+                                        </button>
+                                        <button class="btn btn-warning" onclick="setAreaForMap()">
+                                            <i class="mdi mdi-map-marker"></i> <span th:text="#{btn.set.area}">设置区域</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Batch Operations Area -->
+                            <div class="batch-operations mb-3">
+                                <button class="btn btn-success btn-sm" onclick="showBatchBroadcastModal()">
+                                    <i class="mdi mdi-broadcast"></i> <span th:text="#{btn.batch.broadcast}">批量设置广播</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead class="thead-light">
+                                    <tr>
+                                        <th width="50">
+                                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                        </th>
+                                        <th width="80" th:text="#{table.header.id}">ID</th>
+                                        <th width="120" th:text="#{table.header.point.name}">点位名称</th>
+                                        <th width="80" th:text="#{table.header.coordinate.x}">坐标X</th>
+                                        <th width="80" th:text="#{table.header.coordinate.y}">坐标Y</th>
+                                        <th width="80" th:text="#{table.header.angle}">角度</th>
+                                        <th width="120" th:text="#{table.header.point.code.alias}">点位编码别名</th>
+                                        <th width="120" th:text="#{table.header.area.id}">区域ID</th>
+                                        <th width="100" th:text="#{table.header.is.broadcast}">是否广播</th>
+                                        <th width="120" th:text="#{table.header.operations}">操作</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="dataTable">
+                                    <!-- Data will be loaded dynamically via AJAX -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Pagination Control -->
+                            <div class="text-center">
+                                <ul class="pagination" id="pagination"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Batch Set Broadcast Modal -->
+<div class="modal fade" id="batchBroadcastModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title"><i class="mdi mdi-broadcast"></i> <span th:text="#{modal.title.batch.broadcast}">批量设置广播</span></h4>
+            </div>
+            <div class="modal-body">
+                <form id="batchBroadcastForm">
+                    <div class="form-group">
+                        <label th:text="#{form.label.broadcast.setting}">选择广播设置</label>
+                        <div>
+                            <label class="hx-radio radio-inline radio-primary">
+                                <input checked name="broadcastSetting" type="radio" value="1"><span th:text="#{form.option.enable.broadcast}">启用广播</span>
+                            </label>
+                            <label class="hx-radio radio-inline radio-primary">
+                                <input name="broadcastSetting" type="radio" value="0"><span th:text="#{form.option.disable.broadcast}">禁用广播</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="mdi mdi-information-outline"></i> <span id="batchInfoText">将批量设置选中的</span> <span class="badge badge-primary" id="selectedCount">0</span> <span id="batchInfoText2">个点位的广播设置</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal" type="button" th:text="#{btn.cancel}">取消</button>
+                <button class="btn btn-primary" onclick="batchUpdateBroadcast()" type="button" th:text="#{btn.confirm.setting}">确认设置</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/jquery.min.js}"></script>
+<script th:src="@{/js/bootstrap.min.js}"></script>
+<script th:src="@{/js/perfect-scrollbar.min.js}"></script>
+<script th:src="@{/js/main.min.js}"></script>
+<script th:src="@{/js/project/pagination.js}"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    // I18n messages for JavaScript
+    window.mapI18n = {
+        loading: [[#{js.map.loading}]],
+        noAvailable: [[#{js.map.no.available}]],
+        loadFailed: [[#{js.map.load.failed}]],
+        selectFirst: [[#{js.map.select.first}]],
+        requestFailed: [[#{js.map.request.failed}]],
+        serverError: [[#{js.map.server.error}]],
+        noData: [[#{js.map.no.data}]],
+        enterPointAlias: [[#{js.map.enter.point.alias}]],
+        aliasEmpty: [[#{js.map.alias.empty}]],
+        aliasExists: [[#{js.map.alias.exists}]],
+        setAliasSuccess: [[#{js.map.set.alias.success}]],
+        updateFailed: [[#{js.map.update.failed}]],
+        enterAreaId: [[#{js.map.enter.area.id}]],
+        areaIdEmpty: [[#{js.map.area.id.empty}]],
+        areaSetSuccess: [[#{js.map.area.set.success}]],
+        setFailed: [[#{js.map.set.failed}]],
+        enterNewId: [[#{js.map.enter.new.id}]],
+        addSuccess: [[#{js.map.add.success}]],
+        addFailed: [[#{js.map.add.failed}]],
+        enterValidNumber: [[#{js.map.enter.valid.number}]],
+        selectToUpdate: [[#{js.map.select.to.update}]],
+        updateSuccess: [[#{js.map.update.success}]],
+        selectToDelete: [[#{js.map.select.to.delete}]],
+        deleteConfirm: [[#{js.map.delete.confirm}]],
+        deleteSuccess: [[#{js.map.delete.success}]],
+        deleteFailed: [[#{js.map.delete.failed}]],
+        selectAtLeastOnePoint: [[#{js.map.select.at.least.one.point}]],
+        batchBroadcastSuccess: [[#{js.map.batch.broadcast.success}]],
+        batchBroadcastFailed: [[#{js.map.batch.broadcast.failed}]],
+        yes: [[#{js.map.yes}]],
+        no: [[#{js.map.no}]],
+        setAlias: [[#{btn.set.alias}]],
+        batchInfoText1: [[#{js.map.batch.info.text1}]],
+        batchInfoText2: [[#{js.map.batch.info.text2}]],
+        mapIdLabel: [[#{js.map.id.label}]]
+    };
+
+    // Global variable: current page number
+    let currentPageNumber = 1;
+
+    $(document).ready(function () {
+        loadMapIds();
+
+        // Enter key triggers search
+        $('#mapCodeInput').keypress(function (e) {
+            if (e.which === 13) {
+                loadData(1);
+                return false;
+            }
+        });
+    });
+
+    function loadMapIds() {
+        $.ajax({
+            url: '/api/map/select',
+            type: 'GET',
+            beforeSend: function () {
+                $('#mapIdSelect').html('<option value="">' + window.mapI18n.loading + '</option>');
+            },
+            success: function (res) {
+                if (res.code === 10000 && res.data.length > 0) {
+                    const select = $('#mapIdSelect');
+                    select.empty();
+                    res.data.forEach(mapId => {
+                        select.append(new Option(window.mapI18n.mapIdLabel + ': ' + mapId, mapId));
+                    });
+                    // Select the first one by default
+                    if (res.data.length > 0) {
+                        select.val(res.data[0]);
+                        loadData(1);
+                    }
+                } else {
+                    $('#mapIdSelect').html('<option value="">' + window.mapI18n.noAvailable + '</option>');
+                }
+            },
+            error: function () {
+                $('#mapIdSelect').html('<option value="">' + window.mapI18n.loadFailed + '</option>');
+            }
+        });
+    }
+
+    // Map ID change handler
+    function onMapIdChange() {
+        const mapId = $('#mapIdSelect').val();
+        if (mapId) {
+            loadData(1);
+        }
+    }
+
+    // Load data
+    function loadData(pageNum) {
+        const mapId = $('#mapIdSelect').val();
+        if (!mapId) {
+            alert(window.mapI18n.selectFirst);
+            return;
+        }
+
+        // Update current page number
+        currentPageNumber = pageNum || 1;
+
+        const params = {
+            pageNum: currentPageNumber,
+            pageSize: 10,
+            mapId: mapId,
+            code: $('#mapCodeInput').val()
+        };
+
+        showLoading();
+        $.ajax({
+            url: '/api/map/selectVertexes',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(params),
+            success: function (res) {
+                hideLoading();
+                if (res.code === 10000) {
+                    renderTable(res.data);
+                    renderPagination(res.data);
+                } else {
+                    alert(res.msg || window.mapI18n.requestFailed);
+                }
+            },
+            error: function () {
+                hideLoading();
+                alert(window.mapI18n.serverError);
+            }
+        });
+    }
+
+    // Show loading state
+    function showLoading() {
+        $('#dataTable').html('<tr><td colspan="10" class="text-center"><i class="mdi mdi-loading mdi-spin"></i> ' + window.mapI18n.loading + '</td></tr>');
+        $('#pagination').html(''); // Clear pagination
+        $('.btn').prop('disabled', true); // Disable all buttons to prevent duplicate operations
+    }
+
+    // Get current page number
+    function getCurrentPageNum() {
+        return currentPageNumber;
+    }
+
+    // Hide loading state
+    function hideLoading() {
+        $('.btn').prop('disabled', false); // Re-enable all buttons
+    }
+
+    // Render table
+    function renderTable(pageData) {
+        let html = '';
+        if (pageData.records && pageData.records.length > 0) {
+            pageData.records.forEach(item => {
+                // Broadcast status display
+                const broadcastStatus = item.isBroadcast === 1 ?
+                    '<span class="badge badge-success">' + window.mapI18n.yes + '</span>' :
+                    '<span class="badge badge-secondary">' + window.mapI18n.no + '</span>';
+
+                html += `
+                <tr>
+                    <td><input type="checkbox" class="vertex-checkbox" value="${item.id}"></td>
+                    <td>${item.id}</td>
+                    <td><strong>${item.code || ''}</strong></td>
+                    <td>${item.x ? item.x.toFixed(2) : '0.00'}</td>
+                    <td>${item.y ? item.y.toFixed(2) : '0.00'}</td>
+                    <td>${item.theta ? item.theta.toFixed(2) : '0.00'}</td>
+                    <td>${item.codeAlias || ''}</td>
+                    <td>${item.areaId || ''}</td>
+                    <td>${broadcastStatus}</td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm btn-info" onclick="setAlias(${item.id})">
+                            ${window.mapI18n.setAlias}
+                        </button>
+                    </td>
+                </tr>
+                `;
+            });
+        } else {
+            html = '<tr><td colspan="10" class="text-center">' + window.mapI18n.noData + '</td></tr>';
+        }
+        $('#dataTable').html(html);
+    }
+
+    // Set point code alias
+    function setAlias(id) {
+        const currentAlias = $(`#dataTable tr:has(td:first-child:contains(${id})) td:nth-child(6)`).text().trim();
+        const codeAlias = prompt(window.mapI18n.enterPointAlias, currentAlias);
+        if (codeAlias === null) return; // User cancelled
+
+        if (!codeAlias.trim()) {
+            alert(window.mapI18n.aliasEmpty);
+            return;
+        }
+
+        // Check for duplicates
+        const existingAlias = $(`#dataTable td:nth-child(6):contains(${codeAlias.trim()})`).not(`#dataTable tr:has(td:first-child:contains(${id})) td:nth-child(6)`).text().trim();
+        if (existingAlias) {
+            alert(window.mapI18n.aliasExists);
+            return;
+        }
+
+        $.ajax({
+            url: '/api/map/updateCodeAlias',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                id: id,
+                codeAlias: codeAlias.trim()
+            }),
+            success: function (res) {
+                if (res.code === 10000) {
+                    alert(window.mapI18n.setAliasSuccess);
+                    // Reload current page data to ensure data consistency
+                    loadData(getCurrentPageNum());
+                } else {
+                    alert(res.msg || window.mapI18n.updateFailed);
+                }
+            },
+            error: function () {
+                alert(window.mapI18n.serverError);
+            }
+        });
+    }
+
+    // Set area ID for the entire map
+    function setAreaForMap() {
+        const mapId = $('#mapIdSelect').val();
+        if (!mapId) {
+            alert(window.mapI18n.selectFirst);
+            return;
+        }
+
+        const areaId = prompt(window.mapI18n.enterAreaId);
+        if (areaId === null) return; // User cancelled
+
+        if (!areaId.trim()) {
+            alert(window.mapI18n.areaIdEmpty);
+            return;
+        }
+
+        $.ajax({
+            url: '/api/map/updateAreaId',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                mapId: mapId,
+                areaId: areaId.trim()
+            }),
+            success: function (res) {
+                if (res.code === 10000) {
+                    alert(window.mapI18n.areaSetSuccess);
+                    loadData(1); // 刷新数据
+                } else {
+                    alert(res.msg || window.mapI18n.setFailed);
+                }
+            },
+            error: function () {
+                alert(window.mapI18n.serverError);
+            }
+        });
+    }
+
+    // 添加地图
+    function addMap() {
+        const newMapId = prompt(window.mapI18n.enterNewId);
+        if (newMapId && !isNaN(newMapId)) {
+            $.ajax({
+                url: '/api/map/add',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({mapId: parseInt(newMapId)}),
+                success: function (res) {
+                    if (res.code === 10000) {
+                        alert(window.mapI18n.addSuccess);
+                        loadMapIds(); // 重新加载地图列表
+                    } else {
+                        alert(res.msg || window.mapI18n.addFailed);
+                    }
+                },
+                error: function () {
+                    alert(window.mapI18n.serverError);
+                }
+            });
+        } else if (newMapId) {
+            alert(window.mapI18n.enterValidNumber);
+        }
+    }
+
+    // 更新地图
+    function updateMap() {
+        const mapId = $('#mapIdSelect').val();
+        if (!mapId) {
+            alert(window.mapI18n.selectToUpdate);
+            return;
+        }
+        $.ajax({
+            url: '/api/map/update',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({mapId: parseInt(mapId)}),
+            success: function (res) {
+                if (res.code === 10000) {
+                    alert(window.mapI18n.updateSuccess);
+                    loadData(1); // 重新加载地图列表
+                } else {
+                    alert(res.msg || window.mapI18n.updateFailed);
+                }
+            },
+            error: function () {
+                alert(window.mapI18n.serverError);
+            }
+        });
+    }
+
+    // 删除地图
+    function deleteMap() {
+        const mapId = $('#mapIdSelect').val();
+        if (!mapId) {
+            alert(window.mapI18n.selectToDelete);
+            return;
+        }
+
+        if (confirm(window.mapI18n.deleteConfirm.replace('{0}', mapId))) {
+            $.ajax({
+                url: '/api/map/delete/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({mapId: parseInt(mapId)}),
+                success: function (res) {
+                    if (res.code === 10000) {
+                        alert(window.mapI18n.deleteSuccess);
+                        loadMapIds(); // 重新加载地图列表
+                    } else {
+                        alert(res.msg || window.mapI18n.deleteFailed);
+                    }
+                },
+                error: function () {
+                    alert(window.mapI18n.serverError);
+                }
+            });
+        }
+    }
+
+    // 全选/取消全选
+    function toggleSelectAll() {
+        const selectAll = $('#selectAll').prop('checked');
+        $('.vertex-checkbox').prop('checked', selectAll);
+    }
+
+    // 获取选中的点位ID
+    function getSelectedVertexIds() {
+        const selectedIds = [];
+        $('.vertex-checkbox:checked').each(function () {
+            selectedIds.push(parseInt($(this).val()));
+        });
+        return selectedIds;
+    }
+
+    // 显示批量设置广播模态框
+    function showBatchBroadcastModal() {
+        const selectedIds = getSelectedVertexIds();
+
+        if (selectedIds.length === 0) {
+            alert(window.mapI18n.selectAtLeastOnePoint);
+            return;
+        }
+
+        $('#selectedCount').text(selectedIds.length);
+        // 更新提示文本
+        $('#batchInfoText').text(window.mapI18n.batchInfoText1);
+        $('#batchInfoText2').text(window.mapI18n.batchInfoText2);
+        $('#batchBroadcastModal').modal('show');
+    }
+
+    // 批量更新广播设置
+    function batchUpdateBroadcast() {
+        const selectedIds = getSelectedVertexIds();
+        const broadcastSetting = parseInt($('input[name="broadcastSetting"]:checked').val());
+
+        if (selectedIds.length === 0) {
+            alert(window.mapI18n.selectAtLeastOnePoint);
+            return;
+        }
+
+        $.ajax({
+            url: '/api/map/vertexes/batchBroadcast',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                vertexIds: selectedIds,
+                isBroadcast: broadcastSetting
+            }),
+            success: function (res) {
+                if (res.code === 10000) {
+                    alert(window.mapI18n.batchBroadcastSuccess);
+                    $('#batchBroadcastModal').modal('hide');
+                    loadData(getCurrentPageNum()); // 重新加载当前页数据
+                } else {
+                    alert(res.msg || window.mapI18n.batchBroadcastFailed);
+                }
+            },
+            error: function () {
+                alert(window.mapI18n.serverError);
+            }
+        });
+    }
+
+    /*]]>*/
+</script>
+</body>
+</html>
