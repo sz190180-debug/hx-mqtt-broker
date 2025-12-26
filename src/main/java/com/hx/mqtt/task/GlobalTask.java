@@ -19,12 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.hx.mqtt.common.GlobalCache.AMR_TABLE_MAP;
 import static com.hx.mqtt.common.GlobalCache.TASK_ID_AMR_MAP;
@@ -116,32 +112,73 @@ public class GlobalTask {
     }
 
     @Scheduled(fixedRate = 5000)
-    public void sendTaskStatusScheduled() {
-        sendTaskStatus();
+    public void getFullOccupiedWarehouseIdsTask() {
+        // 1. 获取所有满仓的ID (逻辑：总仓库 - 有空闲点位的仓库)
+        // 这里的逻辑正是“不使用占用符号”，而是“排除空闲符号”
+        Set<Long> fullWarehouseIds = getFullOccupiedWarehouseIds();
+
+        // 2. 发送广播
+        // Topic: GLOBAL_PATH + "rep/task/full/warehouse"
+        // Payload: 满仓的ID集合
+        if (fullWarehouseIds != null) {
+            // 这里不需要传入 mapId 等 path 参数，因为这个 Topic 是全局的仓库状态
+            messageDispatchService.broadcastMessage(TopicEnum.WAREHOUSE_FULL_BROADCAST, fullWarehouseIds);
+
+            // 日志方便调试
+            // log.debug("已广播满仓集合, 数量: {}", fullWarehouseIds.size());
+        }
     }
 
-    private void sendTaskStatus(){
-        // 找出所有的点位
-        List<WarehouseColumnVertexes> warehouseColumnVertexes = warehouseColumnVertexesService.lambdaQuery()
-                .ne(WarehouseColumnVertexes::getStatus, 1)
-                .list();
+    /**
+     * 获取所有点位都被占用（即没有可用点位）的仓库ID集合
+     *
+     * @return 全满的仓库ID集合
+     */
+    public Set<Long> getFullOccupiedWarehouseIds() {
+        // ---------------------------------------------------------------------
+        // 步骤 1: 找出所有“空闲”的点位 (Status = 1: 可用)
+        // ---------------------------------------------------------------------
+        // 我们只关心 columnId，使用 listObjs 减少内存消耗
+        List<Long> freeColumnIds = warehouseColumnVertexesService.listObjs(
+                Wrappers.<WarehouseColumnVertexes>lambdaQuery()
+                        .eq(WarehouseColumnVertexes::getStatus, 1) // 1-可用
+                        .select(WarehouseColumnVertexes::getColumnId),
+                obj -> (Long) obj
+        );
 
-        Set<Long> columSet = warehouseColumnVertexes.stream().map(WarehouseColumnVertexes::getColumnId).collect(Collectors.toSet());
+        // ---------------------------------------------------------------------
+        // 步骤 2: 找出这些“空闲点位”所属的仓库ID (即：未满的仓库)
+        // ---------------------------------------------------------------------
+        Set<Long> notFullWarehouseIds = new HashSet<>();
+        if (!freeColumnIds.isEmpty()) {
+            List<Long> warehouseIds = warehouseColumnService.listObjs(
+                    Wrappers.<WarehouseColumn>lambdaQuery()
+                            .in(WarehouseColumn::getColumnId, freeColumnIds)
+                            .select(WarehouseColumn::getWarehouseId),
+                    obj -> (Long) obj
+            );
+            notFullWarehouseIds.addAll(warehouseIds);
+        }
 
-        // 找出所有已经占用的点位
-        List<WarehouseColumn> warehouseColumns = warehouseColumnService.lambdaQuery()
-                .in(WarehouseColumn::getColumnId, columSet)
-                .list();
+        // ---------------------------------------------------------------------
+        // 步骤 3: 找出所有配置了点位的仓库ID (总范围)
+        // ---------------------------------------------------------------------
+        // 这一步是为了确保我们只统计那些实际拥有列/点位的仓库，避免统计空仓库
+        // 使用 groupBy 去重
+        List<Long> allWarehouseIdsWithColumns = warehouseColumnService.listObjs(
+                Wrappers.<WarehouseColumn>lambdaQuery()
+                        .select(WarehouseColumn::getWarehouseId)
+                        .groupBy(WarehouseColumn::getWarehouseId),
+                obj -> (Long) obj
+        );
 
-        Set<Long> warehouseSet = warehouseColumns.stream().map(WarehouseColumn::getWarehouseId).collect(Collectors.toSet());
+        // ---------------------------------------------------------------------
+        // 步骤 4: 排除法计算 (总仓库 - 未满仓库 = 全满仓库)
+        // ---------------------------------------------------------------------
+        Set<Long> fullWarehouseIds = new HashSet<>(allWarehouseIdsWithColumns);
+        fullWarehouseIds.removeAll(notFullWarehouseIds);
 
-        // 找出所有占用的点位的仓库的所有点位
-        List<WarehouseColumn> warehouseColumnList = warehouseColumnService.lambdaQuery()
-                .in(WarehouseColumn::getWarehouseId, warehouseSet)
-                .list();
-
-
-
+        return fullWarehouseIds;
     }
 
     @Scheduled(fixedRate = 1000)

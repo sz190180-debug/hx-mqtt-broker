@@ -14,6 +14,7 @@ public enum TopicEnum {
     TASK_ADD("/req/task/add", "任务下发"),
     TASK_TYPE_MODIFY("/req/task/type/modify", "任务完成类型修改"),
     TASK_TYPE_BROADCAST("/rep/task/type/broadcast/%s", "任务完成类型广播"),
+    WAREHOUSE_FULL_BROADCAST("/rep/task/full/warehouse", "仓库满仓类型广播"),
     TASK_RESUME("/req/task/resume", "恢复车辆"),
     TASK_PAUSE("/req/task/pause", "暂停车辆"),
     TASK_CANCEL("/req/task/cancel", "取消任务"),

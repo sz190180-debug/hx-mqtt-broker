@@ -101,6 +101,7 @@ public class HxUserTaskChainTemplateServiceImpl extends ServiceImpl<HxUserTaskCh
                     var warehouse = warehouseService.getById(entity.getWarehouseId());
                     if (warehouse != null) {
                         rep.setWarehouseName(warehouse.getWarehouseName());
+                        rep.setWarehouseId(warehouse.getWarehouseId());
                     }
                 } catch (Exception e) {
                     // 忽略异常，避免影响主要功能
