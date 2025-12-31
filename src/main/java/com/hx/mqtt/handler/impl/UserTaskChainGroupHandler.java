@@ -14,6 +14,7 @@ import com.hx.mqtt.service.HxUserTaskChainTemplateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -39,9 +40,11 @@ public class UserTaskChainGroupHandler implements MqttTopicHandler {
         queryWrapper.select(HxUserTaskChainTemplate::getGroupName)
                 .eq(HxUserTaskChainTemplate::getHxUserId, hxUser.getHxUserId())
                 .isNotNull(HxUserTaskChainTemplate::getGroupName)
-                .groupBy(HxUserTaskChainTemplate::getGroupName);
+                .groupBy(HxUserTaskChainTemplate::getGroupName)
+                .orderByAsc(HxUserTaskChainTemplate::getGroupSortOrder);
 
-        return MqttResp.success(context.getReqId(),
-                hxUserTaskChainTemplateService.list(queryWrapper));
+        List<HxUserTaskChainTemplate> list = hxUserTaskChainTemplateService.list(queryWrapper);
+
+        return MqttResp.success(context.getReqId(),list);
     }
 }

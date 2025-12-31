@@ -14,16 +14,9 @@
 <body>
 <div class="hx-layout-web">
     <div class="hx-layout-container">
-        <!-- Left Navigation -->
         <div th:replace="~{navbar :: sidebar}"></div>
-        <!-- End Left Navigation -->
-
-        <!-- Header Information -->
         <header class="hx-layout-header">
         </header>
-        <!-- End Header Information -->
-
-        <!-- Main Page Content -->
         <main class="hx-layout-content">
             <div class="container-fluid">
                 <div class="row">
@@ -36,7 +29,8 @@
                                 <div class="card-toolbar clearfix">
                                     <div class="pull-left">
                                         <button class="btn btn-success" onclick="showAddUserModal()">
-                                            <i class="mdi mdi-plus"></i> <span th:text="#{btn.add.client}">添加客户端</span>
+                                            <i class="mdi mdi-plus"></i> <span
+                                                th:text="#{btn.add.client}">添加客户端</span>
                                         </button>
                                     </div>
                                     <form class="pull-right search-bar" id="searchForm" method="get" role="form">
@@ -47,20 +41,26 @@
                                                 <button aria-expanded="false" aria-haspopup="true"
                                                         class="btn btn-default dropdown-toggle" data-toggle="dropdown"
                                                         id="search-btn"
-                                                        type="button"><span th:text="#{search.field.client.id}">序列号/手机号</span> <span class="caret"></span>
+                                                        type="button"><span
+                                                        th:text="#{search.field.client.id}">序列号/手机号</span> <span
+                                                        class="caret"></span>
                                                 </button>
                                                 <ul class="dropdown-menu" id="user-filed">
                                                     <li><a data-field="clientId"
-                                                           href="javascript:void(0)" th:text="#{search.field.client.id}">序列号/手机号</a>
+                                                           href="javascript:void(0)"
+                                                           th:text="#{search.field.client.id}">序列号/手机号</a>
                                                     </li>
-                                                    <li><a data-field="remark" href="javascript:void(0)" th:text="#{search.field.remark}">备注</a></li>
+                                                    <li><a data-field="remark" href="javascript:void(0)"
+                                                           th:text="#{search.field.remark}">备注</a></li>
                                                 </ul>
                                             </div>
                                             <input class="form-control" id="search-keyword" name="keyword"
-                                                   th:placeholder="#{placeholder.search.content}" placeholder="请输入搜索内容" type="text" value="">
+                                                   th:placeholder="#{placeholder.search.content}"
+                                                   placeholder="请输入搜索内容" type="text" value="">
                                             <div class="input-group-btn">
                                                 <button class="btn btn-primary" onclick="loadData()" type="button">
-                                                    <i class="mdi mdi-magnify"></i> <span th:text="#{btn.search}">搜索</span>
+                                                    <i class="mdi mdi-magnify"></i> <span
+                                                        th:text="#{btn.search}">搜索</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -81,11 +81,9 @@
                                         </tr>
                                         </thead>
                                         <tbody id="userTableBody">
-                                        <!-- th:text="#{comment.data.loaded.by.js}" -->
                                         </tbody>
                                     </table>
                                 </div>
-                                <!-- Pagination Control -->
                                 <div class="text-center">
                                     <ul class="pagination" id="pagination"></ul>
                                 </div>
@@ -95,11 +93,9 @@
                 </div>
             </div>
         </main>
-        <!-- End Main Page Content -->
     </div>
 </div>
 
-<!-- Add Client Dialog -->
 <div class="modal fade" id="addUserModal" role="dialog" tabindex="-1">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -107,13 +103,15 @@
                 <button aria-label="Close" class="close" data-dismiss="modal" type="button">
                     <span aria-hidden="true">&times;</span>
                 </button>
-                <h4 class="modal-title"><i class="mdi mdi-plus"></i> <span th:text="#{modal.title.add.user}">添加新用户</span></h4>
+                <h4 class="modal-title"><i class="mdi mdi-plus"></i> <span
+                        th:text="#{modal.title.add.user}">添加新用户</span></h4>
             </div>
             <div class="modal-body">
                 <form id="addUserForm">
                     <div class="form-group">
                         <label for="addClientId" th:text="#{form.label.client.id}">序列号/手机号</label>
-                        <input class="form-control" id="addClientId" name="clientId" th:placeholder="#{form.label.client.id}" placeholder="请输入clientId"
+                        <input class="form-control" id="addClientId" name="clientId"
+                               th:placeholder="#{form.label.client.id}" placeholder="请输入clientId"
                                required
                                type="text">
                     </div>
@@ -125,19 +123,22 @@
                                        value="1"><span th:text="#{user.type.display}">显示屏</span>
                             </label>
                             <label class="hx-radio radio-inline radio-primary">
-                                <input id="addUserTypeApp" name="userType" type="radio" value="2"><span th:text="#{user.type.app}">APP</span>
+                                <input id="addUserTypeApp" name="userType" type="radio" value="2"><span
+                                    th:text="#{user.type.app}">APP</span>
                             </label>
                         </div>
                     </div>
                     <div class="form-group">
                         <label for="addUsername" th:text="#{form.label.username}">用户名</label>
-                        <input class="form-control" id="addUsername" name="username" th:placeholder="#{placeholder.enter.username}" placeholder="请输入用户名" required
+                        <input class="form-control" id="addUsername" name="username"
+                               th:placeholder="#{placeholder.enter.username}" placeholder="请输入用户名" required
                                type="text">
                     </div>
                     <div class="form-group">
                         <label for="addPassword" th:text="#{form.label.password}">密码</label>
                         <div class="password-input-group">
-                            <input class="form-control" id="addPassword" name="password" th:placeholder="#{placeholder.enter.password}" placeholder="请输入密码"
+                            <input class="form-control" id="addPassword" name="password"
+                                   th:placeholder="#{placeholder.enter.password}" placeholder="请输入密码"
                                    required type="password">
                             <button class="password-toggle-btn" id="toggleAddPassword" type="button">
                                 <i class="mdi mdi-eye"></i>
@@ -146,7 +147,8 @@
                     </div>
                     <div class="form-group">
                         <label for="addRemark" th:text="#{form.label.remark}">备注</label>
-                        <input class="form-control" id="addRemark" name="remark" th:placeholder="#{placeholder.enter.remark}" placeholder="请输入备注" type="text">
+                        <input class="form-control" id="addRemark" name="remark"
+                               th:placeholder="#{placeholder.enter.remark}" placeholder="请输入备注" type="text">
                     </div>
                 </form>
             </div>
@@ -158,7 +160,6 @@
     </div>
 </div>
 
-<!-- Edit Client Dialog -->
 <div class="modal fade" id="editUserModal" role="dialog" tabindex="-1">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -166,14 +167,16 @@
                 <button aria-label="Close" class="close" data-dismiss="modal" type="button">
                     <span aria-hidden="true">&times;</span>
                 </button>
-                <h4 class="modal-title"><i class="mdi mdi-pencil"></i> <span th:text="#{modal.title.edit.user}">编辑用户</span></h4>
+                <h4 class="modal-title"><i class="mdi mdi-pencil"></i> <span
+                        th:text="#{modal.title.edit.user}">编辑用户</span></h4>
             </div>
             <div class="modal-body">
                 <form id="editUserForm">
                     <input id="editHxUserId" name="hxUserId" type="hidden">
                     <div class="form-group">
                         <label for="editClientId" th:text="#{form.label.client.id}">手机号</label>
-                        <input class="form-control" id="editClientId" name="clientId" th:placeholder="#{form.label.client.id}" placeholder="请输入clientId"
+                        <input class="form-control" id="editClientId" name="clientId"
+                               th:placeholder="#{form.label.client.id}" placeholder="请输入clientId"
                                required
                                type="text">
                     </div>
@@ -185,20 +188,23 @@
                                        value="1"><span th:text="#{user.type.display}">显示屏</span>
                             </label>
                             <label class="hx-radio radio-inline radio-primary">
-                                <input id="editUserTypeApp" name="userType" type="radio" value="2"><span th:text="#{user.type.app}">APP</span>
+                                <input id="editUserTypeApp" name="userType" type="radio" value="2"><span
+                                    th:text="#{user.type.app}">APP</span>
                             </label>
                         </div>
                     </div>
                     <div class="form-group">
                         <label for="editUsername" th:text="#{form.label.username}">用户名</label>
-                        <input class="form-control" id="editUsername" name="username" th:placeholder="#{placeholder.enter.username}" placeholder="请输入用户名"
+                        <input class="form-control" id="editUsername" name="username"
+                               th:placeholder="#{placeholder.enter.username}" placeholder="请输入用户名"
                                required
                                type="text">
                     </div>
                     <div class="form-group">
                         <label for="editPassword" th:text="#{form.label.password}">密码</label>
                         <div class="password-input-group">
-                            <input class="form-control" id="editPassword" name="password" th:placeholder="#{placeholder.enter.password}" placeholder="请输入密码"
+                            <input class="form-control" id="editPassword" name="password"
+                                   th:placeholder="#{placeholder.enter.password}" placeholder="请输入密码"
                                    type="password">
                             <button class="password-toggle-btn" id="toggleEditPassword" type="button">
                                 <i class="mdi mdi-eye"></i>
@@ -207,18 +213,19 @@
                     </div>
                     <div class="form-group">
                         <label for="editRemark" th:text="#{form.label.remark}">备注</label>
-                        <input class="form-control" id="editRemark" name="remark" th:placeholder="#{placeholder.enter.remark}" placeholder="请输入备注" type="text">
+                        <input class="form-control" id="editRemark" name="remark"
+                               th:placeholder="#{placeholder.enter.remark}" placeholder="请输入备注" type="text">
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-default" data-dismiss="modal" type="button" th:text="#{btn.cancel}">取消</button>
-                <button class="btn btn-primary" onclick="updateUser()" type="button" th:text="#{btn.update}">确认修改</button>
+                <button class="btn btn-primary" onclick="updateUser()" type="button" th:text="#{btn.update}">确认修改
+                </button>
             </div>
         </div>
     </div>
 </div>
-<!-- Task Chain Management Dialog -->
 <div class="modal fade" id="taskChainModal" role="dialog" tabindex="-1">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -226,7 +233,8 @@
                 <button aria-label="Close" class="close" data-dismiss="modal" type="button">
                     <span aria-hidden="true">&times;</span>
                 </button>
-                <h4 class="modal-title"><i class="mdi mdi-view-list"></i> <span th:text="#{modal.title.task.chain.management}">任务链管理</span></h4>
+                <h4 class="modal-title"><i class="mdi mdi-view-list"></i> <span
+                        th:text="#{modal.title.task.chain.management}">任务链管理</span></h4>
             </div>
             <div class="modal-body">
                 <div class="card-toolbar clearfix">
@@ -249,17 +257,22 @@
                                 <button aria-expanded="false" aria-haspopup="true"
                                         class="btn btn-default dropdown-toggle" data-toggle="dropdown"
                                         id="template-search-btn"
-                                        type="button"><span th:text="#{search.field.group.name}">分组名称</span> <span class="caret"></span>
+                                        type="button"><span th:text="#{search.field.group.name}">分组名称</span> <span
+                                        class="caret"></span>
                                 </button>
                                 <ul class="dropdown-menu" id="template-filed">
-                                    <li><a data-field="groupName" href="javascript:void(0)" th:text="#{search.field.group.name}">分组名称</a></li>
-                                    <li><a data-field="name" href="javascript:void(0)" th:text="#{search.field.template.name}">模板名称</a>
+                                    <li><a data-field="groupName" href="javascript:void(0)"
+                                           th:text="#{search.field.group.name}">分组名称</a></li>
+                                    <li><a data-field="name" href="javascript:void(0)"
+                                           th:text="#{search.field.template.name}">模板名称</a>
                                     </li>
-                                    <li><a data-field="alias" href="javascript:void(0)" th:text="#{search.field.alias}">别名</a></li>
+                                    <li><a data-field="alias" href="javascript:void(0)" th:text="#{search.field.alias}">别名</a>
+                                    </li>
                                 </ul>
                             </div>
                             <input class="form-control" id="template-search-keyword" name="keyword"
-                                   th:placeholder="#{placeholder.search.content}" placeholder="请输入搜索内容" type="text" value="">
+                                   th:placeholder="#{placeholder.search.content}" placeholder="请输入搜索内容"
+                                   type="text" value="">
                             <div class="input-group-btn">
                                 <button class="btn btn-primary" onclick="loadTaskChainData()" type="button">
                                     <i class="mdi mdi-magnify"></i> <span th:text="#{btn.search}">搜索</span>
@@ -269,7 +282,6 @@
                     </form>
                 </div>
 
-                <!-- Sort and Operation Button Area -->
                 <div class="row" style="margin-top: 15px;margin-bottom: 15px">
                     <div class="col-md-6">
                         <div class="form-inline">
@@ -299,6 +311,7 @@
                         <th th:text="#{table.header.warehouse}">仓库</th>
                         <th th:text="#{table.header.warehouse.column}">库位列</th>
                         <th th:text="#{table.header.sort.value}">排序值</th>
+                        <th th:text="#{table.header.group.sort.value}">分组排序值</th>
                         <th th:text="#{table.header.operations}">操作</th>
                     </tr>
                     </thead>
@@ -315,7 +328,6 @@
     </div>
 </div>
 
-<!-- Batch Sort Modal -->
 <div class="modal fade" id="batchSortModal" role="dialog" tabindex="-1">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -323,7 +335,8 @@
                 <button aria-label="Close" class="close" data-dismiss="modal" type="button">
                     <span aria-hidden="true">&times;</span>
                 </button>
-                <h4 class="modal-title"><i class="mdi mdi-sort-numeric"></i> <span th:text="#{modal.title.batch.sort}">批量设置排序</span></h4>
+                <h4 class="modal-title"><i class="mdi mdi-sort-numeric"></i> <span th:text="#{modal.title.batch.sort}">批量设置排序</span>
+                </h4>
             </div>
             <div class="modal-body">
                 <div class="alert alert-info">
@@ -337,6 +350,8 @@
                         <th th:text="#{table.header.group.name}">分组名称</th>
                         <th th:text="#{table.header.current.sort.value}">当前排序值</th>
                         <th th:text="#{table.header.new.sort.value}">新排序值</th>
+                        <th th:text="#{table.header.current.group.sort.value}">当前分组排序值</th>
+                        <th th:text="#{table.header.new.group.sort.value}">新分组排序值</th>
                     </tr>
                     </thead>
                     <tbody id="batchSortTableBody">
@@ -345,7 +360,9 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-default" data-dismiss="modal" type="button" th:text="#{btn.cancel}">取消</button>
-                <button class="btn btn-primary" onclick="saveBatchSort()" type="button" th:text="#{btn.save.sort}">保存排序</button>
+                <button class="btn btn-primary" onclick="saveBatchSort()" type="button" th:text="#{btn.save.sort}">
+                    保存排序
+                </button>
             </div>
         </div>
     </div>
@@ -358,7 +375,8 @@
                 <button aria-label="Close" class="close" data-dismiss="modal" type="button">
                     <span aria-hidden="true">&times;</span>
                 </button>
-                <h4 class="modal-title"><i class="mdi mdi-view-list"></i> <span th:text="#{modal.title.vehicle.management}">车辆管理</span></h4>
+                <h4 class="modal-title"><i class="mdi mdi-view-list"></i> <span
+                        th:text="#{modal.title.vehicle.management}">车辆管理</span></h4>
             </div>
             <div class="modal-body">
                 <table class="table table-hover">
@@ -383,7 +401,6 @@
     </div>
 </div>
 
-<!-- Warehouse Permission Management Dialog -->
 <div class="modal fade" id="warehouseModal" role="dialog" tabindex="-1">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -391,7 +408,8 @@
                 <button aria-label="Close" class="close" data-dismiss="modal" type="button">
                     <span aria-hidden="true">&times;</span>
                 </button>
-                <h4 class="modal-title"><i class="mdi mdi-warehouse"></i> <span th:text="#{warehouse.permission.management}">仓库权限管理</span></h4>
+                <h4 class="modal-title"><i class="mdi mdi-warehouse"></i> <span
+                        th:text="#{warehouse.permission.management}">仓库权限管理</span></h4>
             </div>
             <div class="modal-body">
                 <div class="card-toolbar clearfix">
@@ -400,7 +418,8 @@
                             <i class="mdi mdi-plus"></i> <span th:text="#{btn.assign.permission}">分配权限</span>
                         </button>
                         <button class="btn btn-danger" onclick="batchRemoveWarehousePermission()">
-                            <i class="mdi mdi-delete"></i> <span th:text="#{btn.batch.delete.permission}">批量移除</span>
+                            <i class="mdi mdi-delete"></i> <span
+                                th:text="#{btn.batch.delete.permission}">批量移除</span>
                         </button>
                     </div>
                 </div>
@@ -420,7 +439,6 @@
                         </tr>
                         </thead>
                         <tbody id="warehousePermissionTableBody">
-                        <!-- Warehouse permission data will be loaded by JavaScript -->
                         </tbody>
                     </table>
                 </div>
@@ -432,7 +450,6 @@
     </div>
 </div>
 
-<!-- Assign Warehouse Permission Dialog -->
 <div class="modal fade" id="assignWarehouseModal" role="dialog" tabindex="-1">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -440,7 +457,8 @@
                 <button aria-label="Close" class="close" data-dismiss="modal" type="button">
                     <span aria-hidden="true">&times;</span>
                 </button>
-                <h4 class="modal-title"><i class="mdi mdi-plus"></i> <span th:text="#{modal.title.assign.warehouse.permission}">分配仓库权限</span></h4>
+                <h4 class="modal-title"><i class="mdi mdi-plus"></i> <span
+                        th:text="#{modal.title.assign.warehouse.permission}">分配仓库权限</span></h4>
             </div>
             <div class="modal-body">
                 <form id="warehouseRoleForm">
@@ -449,7 +467,6 @@
                         <div class="checkbox-list"
                              style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
                             <div id="warehouseCheckboxList">
-                                <!-- Warehouse checkboxes will be generated by JavaScript -->
                             </div>
                         </div>
                     </div>
@@ -462,7 +479,8 @@
                             </label>
                             <label class="hx-radio radio-inline radio-primary">
                                 <input name="warehouseAddType" type="radio"
-                                       value="2"><span th:text="#{form.label.replace.existing.permission}">替换现有权限</span>
+                                       value="2"><span
+                                    th:text="#{form.label.replace.existing.permission}">替换现有权限</span>
                             </label>
                         </div>
                     </div>
@@ -470,7 +488,9 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-default" data-dismiss="modal" type="button" th:text="#{btn.cancel}">取消</button>
-                <button class="btn btn-success" onclick="saveWarehouseRoles()" type="button" th:text="#{btn.confirm.assign}">确认分配</button>
+                <button class="btn btn-success" onclick="saveWarehouseRoles()" type="button"
+                        th:text="#{btn.confirm.assign}">确认分配
+                </button>
             </div>
         </div>
     </div>

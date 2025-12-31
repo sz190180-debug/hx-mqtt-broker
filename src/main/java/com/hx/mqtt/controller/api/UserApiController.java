@@ -102,4 +102,12 @@ public class UserApiController {
         hxUserTaskChainTemplateService.batchSetSortOrder(req);
         return HttpResp.success();
     }
+
+    @Transactional(rollbackFor = Exception.class)
+    @PostMapping("/taskChain/group/setSortOrder")
+    public HttpResp<Void> setGroupTaskChainSortOrder(@Valid @RequestBody UserTaskChainTemplateGroupSortReq req) {
+        hxUserTaskChainTemplateService.setGroupSortOrder(req);
+        return HttpResp.success();
+    }
+
 }

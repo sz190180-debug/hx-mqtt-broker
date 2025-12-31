@@ -297,7 +297,8 @@ function loadTaskChainData(pageNum = 1) {
         req.alias = keyword;
     }
 
-    $('#taskChainTableBody').html('<tr><td colspan="9" class="text-center"><i class="mdi mdi-loading mdi-spin"></i> ' + window.userI18n.loading + '</td></tr>');
+    // 注意：colspan 改为 10，因为增加了分组排序值列
+    $('#taskChainTableBody').html('<tr><td colspan="10" class="text-center"><i class="mdi mdi-loading mdi-spin"></i> ' + window.userI18n.loading + '</td></tr>');
 
     $.ajax({
         url: '/api/user/select/taskChain',
@@ -311,12 +312,12 @@ function loadTaskChainData(pageNum = 1) {
                 renderTaskChainTable(res.data);
                 renderTaskChainPagination(res.data);
             } else {
-                $('#taskChainTableBody').html('<tr><td colspan="8" class="text-center">' + window.userI18n.noTaskChainData + '</td></tr>');
+                $('#taskChainTableBody').html('<tr><td colspan="10" class="text-center">' + window.userI18n.noTaskChainData + '</td></tr>');
                 $('#taskChainPagination').empty();
             }
         },
         error: function () {
-            $('#taskChainTableBody').html('<tr><td colspan="8" class="text-center">' + window.userI18n.dataLoadFailed + '</td></tr>');
+            $('#taskChainTableBody').html('<tr><td colspan="10" class="text-center">' + window.userI18n.dataLoadFailed + '</td></tr>');
         }
     });
 }
@@ -327,7 +328,7 @@ function renderTaskChainTable(pageData) {
     tbody.empty();
 
     if (!pageData.records || pageData.records.length === 0) {
-        tbody.append('<tr><td colspan="9" class="text-center">' + window.userI18n.noTaskChainData + '</td></tr>');
+        tbody.append('<tr><td colspan="10" class="text-center">' + window.userI18n.noTaskChainData + '</td></tr>');
         return;
     }
 
@@ -343,7 +344,6 @@ function renderTaskChainTable(pageData) {
 
         // 排序值（可编辑）
         const sortValue = taskChain.sortOrder || 0;
-        console.log('渲染任务链:', taskChain.name, '排序值:', sortValue); // 调试信息
         tr.append(`<td style="text-align: center;">
                 <div class="input-group input-group-sm" style="width: 110px; margin: 0 auto;">
                     <input type="number" class="form-control sort-input" value="${sortValue}"
@@ -351,6 +351,21 @@ function renderTaskChainTable(pageData) {
                     <span class="input-group-btn">
                         <button class="btn btn-primary btn-xs" onclick="updateSortOrder(${taskChain.id}, this)"
                                 title="保存排序">
+                            <i class="mdi mdi-check"></i>
+                        </button>
+                    </span>
+                </div>
+            </td>`);
+
+        // 分组排序值（可编辑） - 新增
+        const groupSortValue = taskChain.groupSortOrder || 0;
+        tr.append(`<td style="text-align: center;">
+                <div class="input-group input-group-sm" style="width: 110px; margin: 0 auto;">
+                    <input type="number" class="form-control group-sort-input" value="${groupSortValue}"
+                           data-id="${taskChain.id}" style="text-align: center;">
+                    <span class="input-group-btn">
+                        <button class="btn btn-primary btn-xs" onclick="updateGroupSortOrder(${taskChain.id}, this)"
+                                title="保存分组排序">
                             <i class="mdi mdi-check"></i>
                         </button>
                     </span>
@@ -696,7 +711,7 @@ function updateSortOrder(id, button) {
     $(button).html('<i class="mdi mdi-loading mdi-spin"></i>');
 
     $.ajax({
-        url: '/api/user/taskChain/setSortOrder', // 临时使用测试接口
+        url: '/api/user/taskChain/setSortOrder',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({
@@ -731,6 +746,55 @@ function updateSortOrder(id, button) {
     });
 }
 
+// 新增：更新单个任务链分组排序
+function updateGroupSortOrder(id, button) {
+    const input = $(button).closest('.input-group').find('.group-sort-input');
+    const groupSortOrder = parseInt(input.val());
+
+    // 修正：这里之前使用了未定义的 sortOrder 导致报错
+    console.log('更新分组排序 - ID:', id, '排序值:', groupSortOrder);
+
+    if (isNaN(groupSortOrder)) {
+        alert(window.userI18n.enterValidNumber);
+        return;
+    }
+
+    // 禁用按钮防止重复点击
+    $(button).prop('disabled', true);
+    $(button).html('<i class="mdi mdi-loading mdi-spin"></i>');
+
+    $.ajax({
+        url: '/api/user/taskChain/group/setSortOrder', // 假设的接口地址，请根据实际后端调整
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            id: id,
+            groupSortOrder: groupSortOrder
+        }),
+        success: function (res) {
+            if (res.code === 10000) {
+                // 显示成功提示
+                $(button).html('<i class="mdi mdi-check text-success"></i>');
+                $(button).prop('disabled', false);
+
+                setTimeout(() => {
+                    $(button).html('<i class="mdi mdi-check"></i>');
+                    loadTaskChainData();
+                }, 100);
+            } else {
+                $(button).html('<i class="mdi mdi-check"></i>');
+                $(button).prop('disabled', false);
+                alert(res.msg || window.userI18n.updateFailed);
+            }
+        },
+        error: function (xhr, status, error) {
+            $(button).html('<i class="mdi mdi-check"></i>');
+            $(button).prop('disabled', false);
+            alert(window.userI18n.serverError + ': ' + error);
+        }
+    });
+}
+
 // 显示批量排序模态框
 function showBatchSortModal() {
     const selectedIds = [];
@@ -742,13 +806,15 @@ function showBatchSortModal() {
         const name = row.find('td:eq(2)').text();
         const groupName = row.find('td:eq(3)').text();
         const currentSort = row.find('.sort-input').val();
+        const currentGroupSort = row.find('.group-sort-input').val(); // 获取当前分组排序值
 
         selectedIds.push(id);
         selectedData.push({
             id: id,
             name: name,
             groupName: groupName,
-            currentSort: currentSort
+            currentSort: currentSort,
+            currentGroupSort: currentGroupSort
         });
     });
 
@@ -771,6 +837,11 @@ function showBatchSortModal() {
                         <input type="number" class="form-control batch-sort-input"
                                value="${item.currentSort}" data-id="${item.id}">
                     </td>
+                    <td>${item.currentGroupSort || 0}</td>
+                    <td>
+                        <input type="number" class="form-control batch-group-sort-input"
+                               value="${item.currentGroupSort || 0}" data-id="${item.id}">
+                    </td>
                 </tr>
             `);
         tbody.append(tr);
@@ -783,14 +854,18 @@ function showBatchSortModal() {
 function saveBatchSort() {
     const sortItems = [];
 
-    $('.batch-sort-input').each(function () {
-        const id = $(this).data('id');
-        const sortOrder = parseInt($(this).val());
+    // 遍历表格行来收集数据
+    $('#batchSortTableBody tr').each(function() {
+        const row = $(this);
+        const id = row.find('.batch-sort-input').data('id');
+        const sortOrder = parseInt(row.find('.batch-sort-input').val());
+        const groupSortOrder = parseInt(row.find('.batch-group-sort-input').val());
 
-        if (!isNaN(sortOrder)) {
+        if (!isNaN(sortOrder) || !isNaN(groupSortOrder)) {
             sortItems.push({
                 id: id,
-                sortOrder: sortOrder
+                sortOrder: isNaN(sortOrder) ? 0 : sortOrder,
+                groupSortOrder: isNaN(groupSortOrder) ? 0 : groupSortOrder
             });
         }
     });

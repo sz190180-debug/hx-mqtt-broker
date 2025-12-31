@@ -12,6 +12,7 @@ import com.hx.mqtt.domain.entity.HxUser;
 import com.hx.mqtt.domain.entity.HxUserTaskChainTemplate;
 import com.hx.mqtt.domain.entity.TaskChainTemplate;
 import com.hx.mqtt.domain.rep.user.UserTaskChainTemplateRep;
+import com.hx.mqtt.domain.req.user.UserTaskChainTemplateGroupSortReq;
 import com.hx.mqtt.domain.req.user.UserTaskChainTemplateReq;
 import com.hx.mqtt.domain.req.user.UserTaskChainTemplateSortReq;
 import com.hx.mqtt.domain.req.user.UserTaskChainTemplateBatchSortReq;
@@ -173,28 +174,53 @@ public class HxUserTaskChainTemplateServiceImpl extends ServiceImpl<HxUserTaskCh
             return;
         }
 
+        // 1. 提取所有 ID
         List<Long> ids = req.getSortItems().stream()
                 .map(UserTaskChainTemplateBatchSortReq.SortItem::getId)
                 .collect(Collectors.toList());
 
+        // 2. 查询实体
         List<HxUserTaskChainTemplate> entities = listByIds(ids);
         if (CollectionUtil.isEmpty(entities)) {
             throw new RuntimeException("用户任务链模板不存在");
         }
 
-        Map<Long, Integer> sortOrderMap = req.getSortItems().stream()
+        // 3. 将 list 转为 Map<ID, Item对象>，方便同时获取两个排序值
+        // Function.identity() 或者 item -> item 代表值是对象本身
+        Map<Long, UserTaskChainTemplateBatchSortReq.SortItem> itemMap = req.getSortItems().stream()
                 .collect(Collectors.toMap(
                         UserTaskChainTemplateBatchSortReq.SortItem::getId,
-                        UserTaskChainTemplateBatchSortReq.SortItem::getSortOrder
+                        item -> item,
+                        (v1, v2) -> v1 // 如果前端传了重复ID，取第一个，防止报错
                 ));
 
+        // 4. 遍历实体并赋值
         entities.forEach(entity -> {
-            Integer sortOrder = sortOrderMap.get(entity.getId());
-            if (sortOrder != null) {
-                entity.setSortOrder(sortOrder);
+            UserTaskChainTemplateBatchSortReq.SortItem item = itemMap.get(entity.getId());
+            if (item != null) {
+                // 更新 排序值
+                if (item.getSortOrder() != null) {
+                    entity.setSortOrder(item.getSortOrder());
+                }
+                // 更新 分组排序值 (新增)
+                if (item.getGroupSortOrder() != null) {
+                    entity.setGroupSortOrder(item.getGroupSortOrder());
+                }
             }
         });
 
+        // 5. 批量更新
         updateBatchById(entities);
     }
+
+    @Override
+    public void setGroupSortOrder(UserTaskChainTemplateGroupSortReq req) {
+        HxUserTaskChainTemplate entity = getById(req.getId());
+        if (entity == null) {
+            throw new RuntimeException("用户任务链模板不存在");
+        }
+        entity.setGroupSortOrder(req.getGroupSortOrder());
+        updateById(entity);
+    }
+
 }

@@ -30,5 +30,10 @@ public class UserTaskChainTemplateBatchSortReq {
          * 排序值，数值越小排序越靠前
          */
         private Integer sortOrder;
+
+        /**
+         * 排序值，数值越小排序越靠前
+         */
+        private Integer groupSortOrder;
     }
 }

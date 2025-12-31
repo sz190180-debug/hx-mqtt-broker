@@ -32,4 +32,9 @@ public class HxUserTaskChainTemplate {
      * 排序字段，数值越小排序越靠前
      */
     private Integer sortOrder;
+
+    /**
+     * 排序字段，数值越小排序越靠前
+     */
+    private Integer groupSortOrder;
 }
