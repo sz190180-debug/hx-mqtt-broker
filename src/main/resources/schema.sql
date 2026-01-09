@@ -99,9 +99,7 @@ CREATE TABLE `hx_rcs_ip`
 DROP TABLE IF EXISTS `hx_map`;
 CREATE TABLE `hx_map`
 (
-    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
-    map_id       VARCHAR(255) NOT NULL COMMENT '地图标识',
-    map_name     VARCHAR(255) NOT NULL COMMENT '地图名称',
+    map_id           BIGINT AUTO_INCREMENT PRIMARY KEY,
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     create_by    VARCHAR(255)
 );

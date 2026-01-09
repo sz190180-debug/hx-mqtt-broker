@@ -17,6 +17,8 @@ public enum MqttRespEnum {
     NONE_EXIST_STATUS(10008, "不存在状态"),
     TASK_TEMPLATE_FAILED(10009, ",发送失败请检查车辆是否在线"),
 
+    TASK_RUNNING_FAILED(10010, ",库位已被占用，禁止下发"),
+
     EXCEPTION(11000, "系统异常");
 
     private final Integer code;
