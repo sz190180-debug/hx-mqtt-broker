@@ -39,7 +39,7 @@ public class CallbackApiController {
             GlobalCache.TASK_ID_AMR_MAP.put(req.getTaskChainId(), req.getAmrId());
         }
         if (status != null) {
-            if (status == 7) {
+            if (status == 7 || status == 3) {
                 applicationContext.publishEvent(TaskChainEndEvent.builder()
                         .source(this)
                         .status(status)
