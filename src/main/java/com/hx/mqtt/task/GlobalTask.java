@@ -74,6 +74,7 @@ public class GlobalTask {
                 }
                 dto.setTaskChainId(data.getTaskChainId());
                 dto.setName(data.getName());
+                dto.setPresent(data.getMaterials().isPresent() ? 1 : 0);
                 AMR_TABLE_MAP.put(Long.valueOf(data.getId()), dto);
                 return dto;
             }).collect(Collectors.toMap(AmrDataDto::getId, v -> v));

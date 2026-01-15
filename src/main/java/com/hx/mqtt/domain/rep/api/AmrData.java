@@ -38,6 +38,7 @@ public class AmrData {
     @Data
     public static class Materials {
         private List<MaterialItem> materials;
+        private boolean present;
 
         @Data
         public static class MaterialItem {

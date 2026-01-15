@@ -47,4 +47,6 @@ public class AmrDataDto {
     private Long taskChainId;
 
     private String name;
+
+    private int present;
 }
