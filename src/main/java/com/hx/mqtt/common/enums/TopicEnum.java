@@ -48,6 +48,7 @@ public enum TopicEnum {
     WAREHOUSE_VERTEXES_DELETE("/req/warehouse/vertexes/delete", "删除库位列点位关联"),
     WAREHOUSE_VERTEXES_LIST("/req/warehouse/vertexes/list", "获取库位列的点位关联列表"),
     WAREHOUSE_VERTEXES_DETAIL("/req/warehouse/vertexes/detail", "获取点位关联详情"),
+    WAREHOUSE_VERTEXES_UPDATE_STATUS("/req/task/type/broadcast", "更新库位列点位状态关联"),
 
     // ==================== 批量操作相关 ====================
     WAREHOUSE_POSITION_BATCH_UPDATE("/req/warehouse/position/batchUpdate", "批量更新点位状态");
