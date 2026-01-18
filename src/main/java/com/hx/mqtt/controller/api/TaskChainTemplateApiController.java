@@ -31,6 +31,7 @@ import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @RestController
@@ -53,13 +54,33 @@ public class TaskChainTemplateApiController {
             return HttpResp.success();
         }
 
+        Map<Long, TaskChainTemplate> existingMap = taskChainTemplateService.list().stream()
+                .collect(Collectors.toMap(TaskChainTemplate::getId, Function.identity(), (k1, k2) -> k1));
+
         List<TaskChainTemplate> templates = new ArrayList<>();
         List<TaskTemplate> taskTemplates = new ArrayList<>();
         for (TaskChainTemplateWrapper wrapper : rep.getList()) {
+
+
             TaskChainTemplatePo taskChainTemplatePo = wrapper.getTaskChainTemplatePo();
             TaskChainTemplate taskTemplatePo = new TaskChainTemplate();
             BeanUtils.copyProperties(taskChainTemplatePo, taskTemplatePo);
-            taskTemplatePo.setAlias(taskChainTemplatePo.getName());
+
+            // 2. 从 Map 中获取旧数据
+            TaskChainTemplate existingTemplate = existingMap.get(taskChainTemplatePo.getId());
+
+            // 3. 别名判断逻辑
+            // 先获取旧数据的别名（如果旧数据不存在，则视为空）
+            String existingAlias = (existingTemplate != null) ? existingTemplate.getAlias() : null;
+
+            if (StringUtils.isNotEmpty(existingAlias)) {
+                // 如果数据库中已有别名 -> 使用数据库中的别名 (保留配置)
+                taskTemplatePo.setAlias(existingAlias);
+            } else {
+                // 如果数据库中没别名(或没这条数据) -> 使用当前PO的Name作为默认别名
+                taskTemplatePo.setAlias(taskChainTemplatePo.getName());
+            }
+
             templates.add(taskTemplatePo);
             taskTemplates.addAll(wrapper.getTaskTemplatePos().stream().map(v -> {
                 TaskTemplate taskTemplate = new TaskTemplate();
