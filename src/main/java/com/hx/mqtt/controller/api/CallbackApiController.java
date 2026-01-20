@@ -28,6 +28,7 @@ public class CallbackApiController {
     @PostMapping("/taskInfo")
     public String taskInfo(@RequestBody TaskChainInfoReq req) {
         String jsonString = JSONObject.toJSONString(req);
+        log.info("taskInfo:{}", jsonString);
         String clientId = GlobalCache.TASK_CLIENT_ID_MAP.get(req.getTaskChainId());
         if (StrUtil.isNotBlank(clientId)) {
             messageDispatchService.sendClientMessage(TopicEnum.PUSH_INFO, clientId, req);

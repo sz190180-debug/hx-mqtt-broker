@@ -52,6 +52,8 @@ public class TaskChainEndEventHandler implements ApplicationListener<TaskChainEn
         GlobalCache.removeByStatus(status, taskChainId);
         LambdaQueryWrapper<HxUserTaskChainTemplate> lq = Wrappers.lambdaQuery();
         lq.eq(HxUserTaskChainTemplate::getLastTaskChainId, taskChainId);
+        lq.orderByDesc(HxUserTaskChainTemplate::getId);
+        lq.last("limit 1");
         HxUserTaskChainTemplate hxUserTaskChainTemplate = hxUserTaskChainTemplateService.getOne(lq);
         if (!GlobalCache.TASK_ID_TEMPLATE_MAP.containsKey(taskChainId)) {
             LambdaUpdateWrapper<HxUserTaskChainTemplate> upLq = Wrappers.lambdaUpdate();
