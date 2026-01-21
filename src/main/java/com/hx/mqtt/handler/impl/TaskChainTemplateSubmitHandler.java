@@ -9,17 +9,19 @@ import com.hx.mqtt.common.enums.MqttRespEnum;
 import com.hx.mqtt.common.enums.TopicEnum;
 import com.hx.mqtt.domain.entity.HxUserTaskChainTemplate;
 import com.hx.mqtt.domain.entity.TaskChainTemplate;
+import com.hx.mqtt.domain.entity.WarehouseColumn;
+import com.hx.mqtt.domain.entity.WarehouseColumnVertexes;
 import com.hx.mqtt.domain.rep.mqtt.TaskAddRep;
 import com.hx.mqtt.domain.req.mqtt.TaskChainTemplateSubmitReq;
 import com.hx.mqtt.handler.MqttTopicHandler;
-import com.hx.mqtt.service.HxUserTaskChainTemplateService;
-import com.hx.mqtt.service.RcsApiService;
-import com.hx.mqtt.service.TaskChainTemplateService;
+import com.hx.mqtt.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.hx.mqtt.common.GlobalCache.TASK_ID_AMR_MAP;
 
@@ -31,6 +33,8 @@ public class TaskChainTemplateSubmitHandler implements MqttTopicHandler {
     private final TaskChainTemplateService taskChainTemplateService;
     private final HxUserTaskChainTemplateService hxUserTaskChainTemplateService;
     private final RcsApiService rcsApiService;
+    private final WarehouseColumnService warehouseColumnService;
+    private final WarehouseColumnVertexesService warehouseColumnVertexesService;
 
     @Override
     public TopicEnum getTopicEnum() {
@@ -62,18 +66,32 @@ public class TaskChainTemplateSubmitHandler implements MqttTopicHandler {
         // 确保同一时刻只有一个线程能进行“检查+提交”的操作
         synchronized (this) {
 
-            // 4. 【逻辑修正】先检查该仓库下是否有正在运行的任务
-            // 注意：必须在提交RCS之前检查，否则会导致任务已经下发了才报错
-            List<HxUserTaskChainTemplate> list = hxUserTaskChainTemplateService.lambdaQuery()
-                    .eq(HxUserTaskChainTemplate::getWarehouseId, template.getWarehouseId())
+            // 仓库列数据
+            List<WarehouseColumn> warehouseColumnList = warehouseColumnService.lambdaQuery()
+                    .eq(WarehouseColumn::getWarehouseId, template.getWarehouseId())
                     .list();
 
-            for (HxUserTaskChainTemplate hxUserTaskChainTemplate : list) {
-                // 如果有关联的任务ID，且该任务ID在缓存中（说明正在运行）
-                if (hxUserTaskChainTemplate.getLastTaskChainId() != null) {
-                    if (TASK_ID_AMR_MAP.containsKey(hxUserTaskChainTemplate.getLastTaskChainId())) {
-                        log.warn("仓库 {} 正忙，任务 {} 正在运行", template.getWarehouseId(), hxUserTaskChainTemplate.getLastTaskChainId());
-                        return MqttResp.fail(context.getReqId(), MqttRespEnum.TASK_RUNNING_FAILED.getMsg());
+            if (!warehouseColumnList.isEmpty()) {
+                Set<Long> columnIds = warehouseColumnList.stream().map(WarehouseColumn::getColumnId).collect(Collectors.toSet());
+                List<WarehouseColumnVertexes> warehouseColumnVertexesList = warehouseColumnVertexesService.lambdaQuery()
+                        .in(WarehouseColumnVertexes::getColumnId, columnIds)
+                        .list();
+
+                if (warehouseColumnVertexesList.size() == 1) {
+                    // 4. 【逻辑修正】先检查该仓库下是否有正在运行的任务
+                    // 注意：必须在提交RCS之前检查，否则会导致任务已经下发了才报错
+                    List<HxUserTaskChainTemplate> list = hxUserTaskChainTemplateService.lambdaQuery()
+                            .eq(HxUserTaskChainTemplate::getWarehouseId, template.getWarehouseId())
+                            .list();
+
+                    for (HxUserTaskChainTemplate hxUserTaskChainTemplate : list) {
+                        // 如果有关联的任务ID，且该任务ID在缓存中（说明正在运行）
+                        if (hxUserTaskChainTemplate.getLastTaskChainId() != null) {
+                            if (TASK_ID_AMR_MAP.containsKey(hxUserTaskChainTemplate.getLastTaskChainId())) {
+                                log.warn("仓库 {} 正忙，任务 {} 正在运行", template.getWarehouseId(), hxUserTaskChainTemplate.getLastTaskChainId());
+                                return MqttResp.fail(context.getReqId(), MqttRespEnum.TASK_RUNNING_FAILED.getMsg());
+                            }
+                        }
                     }
                 }
             }
