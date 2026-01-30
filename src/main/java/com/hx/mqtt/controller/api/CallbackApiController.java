@@ -54,6 +54,13 @@ public class CallbackApiController {
                         .endPointCode(req.getEndPointCode())
                         .taskType(req.getTaskType())
                         .build());
+                GlobalCache.TASK_WEIGHING_MAP.remove(req.getTaskChainId());
+            }
+
+            if (status == 1) {
+                GlobalCache.TASK_WEIGHING_MAP.put(req.getTaskChainId(), req);
+            } else {
+                GlobalCache.TASK_WEIGHING_MAP.remove(req.getTaskChainId());
             }
         }
         return JSONObject.of("receive", 1).toJSONString();

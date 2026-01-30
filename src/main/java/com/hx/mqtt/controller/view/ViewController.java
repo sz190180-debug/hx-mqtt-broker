@@ -52,4 +52,9 @@ public class ViewController {
     public String machine() {
         return "machine";
     }
+
+    @GetMapping("/amr_register")
+    public String amrRegister() {
+        return "amr_register"; // 对应 templates/amr_register.html
+    }
 }

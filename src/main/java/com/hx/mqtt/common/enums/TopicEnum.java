@@ -51,7 +51,13 @@ public enum TopicEnum {
     WAREHOUSE_VERTEXES_UPDATE_STATUS("/req/task/type/broadcast", "更新库位列点位状态关联"),
 
     // ==================== 批量操作相关 ====================
-    WAREHOUSE_POSITION_BATCH_UPDATE("/req/warehouse/position/batchUpdate", "批量更新点位状态");
+    WAREHOUSE_POSITION_BATCH_UPDATE("/req/warehouse/position/batchUpdate", "批量更新点位状态"),
+
+    // ==================== 批量操作相关 ====================
+    WEIGHT_REQ("/req/weight", "重量请求"),
+
+
+    ;
 
     private final String path;
     private final String msg;

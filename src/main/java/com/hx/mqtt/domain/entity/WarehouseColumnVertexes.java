@@ -37,4 +37,9 @@ public class WarehouseColumnVertexes {
      * 状态：1-可用，2-占用，3-禁用
      */
     private Integer status;
+
+    /**
+     * 货物重量 (新增)
+     */
+    private Double weight;
 }

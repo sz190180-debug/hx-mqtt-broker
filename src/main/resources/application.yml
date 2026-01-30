@@ -51,7 +51,14 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
 #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+#    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+logging:
+  # 显式指定配置文件（强制关联）
+  config: classpath:logback-spring.xml
+  level:
+    # 确保你的项目包名级别是 INFO 或 DEBUG
+    com.hx.mqtt: DEBUG
 
 # 机台控制配置
 machine:

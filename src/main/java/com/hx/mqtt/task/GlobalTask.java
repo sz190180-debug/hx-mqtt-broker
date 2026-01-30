@@ -6,6 +6,7 @@ import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
+import com.hx.mqtt.common.GlobalCache;
 import com.hx.mqtt.common.enums.StateEnum;
 import com.hx.mqtt.common.enums.TopicEnum;
 import com.hx.mqtt.domain.dto.AmrDataDto;
@@ -13,9 +14,11 @@ import com.hx.mqtt.domain.dto.TaskTemplateBroadcastDto;
 import com.hx.mqtt.domain.entity.*;
 import com.hx.mqtt.domain.rep.api.AmrData;
 import com.hx.mqtt.domain.rep.warehouse.WarehouseRep;
+import com.hx.mqtt.domain.req.api.TaskChainInfoReq;
 import com.hx.mqtt.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +41,60 @@ public class GlobalTask {
     private final WarehouseColumnVertexesService warehouseColumnVertexesService;
     private final WarehouseColumnService warehouseColumnService;
     private final HxMapVertexesService hxMapVertexesService;
+    private final AmrRegisterConfigService amrRegisterConfigService;
+    private final ModbusService modbusService;
+
+    // 每1000毫秒执行一次（称重）
+    @Scheduled(fixedRate = 1000)
+    public void setWeighing() {
+        try {
+            if (GlobalCache.TASK_WEIGHING_MAP.isEmpty()) {
+                return;
+            }
+
+            // 1. 原子读取当前重量
+            Double currentWeight = GlobalCache.getCurrentWeight();
+
+            // 检查重量是否有效
+            if (currentWeight == null || currentWeight <= 0) {
+                return;
+            }
+
+            // 为了演示完整性，保留您之前的业务逻辑框架:
+            GlobalCache.TASK_WEIGHING_MAP.forEach((taskId, req) -> {
+                try {
+                    Long amrId = req.getAmrId();
+                    if (amrId == null) return;
+
+                    AmrRegisterConfig config = amrRegisterConfigService.getOne(
+                            new LambdaQueryWrapper<AmrRegisterConfig>().eq(AmrRegisterConfig::getAmrId, amrId)
+                    );
+
+                    if (config != null) {
+                        Integer status = modbusService.readSingleRegister(
+                                config.getIp(), config.getPort(), 1, config.getReadAddress()
+                        );
+
+                        if (status != null && status == 1) {
+                            // 写入 ConcurrentHashMap，线程安全
+                            GlobalCache.AMR_WEIGHT_MAP.put(amrId, currentWeight);
+                            log.info("绑定成功: AMR {} -> {} kg", amrId, currentWeight);
+
+                            modbusService.writeSingleRegister(
+                                    config.getIp(), config.getPort(), 1, config.getWriteAddress(),
+                                    1
+                            );
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.error("任务[{}]处理异常", taskId, ex);
+                }
+            });
+
+        } catch (Exception e) {
+            log.error("setWeighing task error", e);
+        }
+    }
 
     // 每500毫秒执行一次（不受任务执行时间影响）
     @Scheduled(fixedRate = 500)

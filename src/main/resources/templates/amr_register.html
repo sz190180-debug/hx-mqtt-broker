@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{page.title.amr.register}">车辆寄存器配置 - WMS管理中心</title>
+    <link rel="icon" th:href="@{/images/favicon.svg}" type="image/ico">
+    <link rel="stylesheet" th:href="@{/css/materialdesignicons.min.css}">
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.min.css}">
+</head>
+<body>
+<div class="hx-layout-web">
+    <div th:replace="~{navbar :: sidebar}"></div>
+
+    <main class="hx-layout-content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title" th:text="#{nav.amr.register}">车辆寄存器配置</h4>
+                        </div>
+                        <div class="card-toolbar clearfix">
+                            <form class="pull-right search-bar" role="form">
+                                <div class="input-group">
+                                    <input class="form-control" id="searchAmrId" type="text" placeholder="输入车辆ID搜索">
+                                    <div class="input-group-btn">
+                                        <button class="btn btn-primary" type="button" onclick="loadData(1)">
+                                            <i class="mdi mdi-magnify"></i> 搜索
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="pull-left">
+                                <button class="btn btn-success" onclick="showAddModal()">
+                                    <i class="mdi mdi-plus"></i> 添加配置
+                                </button>
+                                <button class="btn btn-danger" onclick="batchDelete()">
+                                    <i class="mdi mdi-delete"></i> 批量删除
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead class="thead-light">
+                                    <tr>
+                                        <th width="50"><input id="selectAll" type="checkbox"></th>
+                                        <th>ID</th>
+                                        <th>车辆ID</th>
+                                        <th>IP地址</th>
+                                        <th>端口</th>
+                                        <th>读寄存器地址</th>
+                                        <th>写寄存器地址</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="dataTable">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="text-center">
+                                <ul class="pagination" id="pagination"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="modalTitle">添加配置</h4>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <input type="hidden" id="configId">
+                    <div class="form-group">
+                        <label>车辆ID <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="inputAmrId" required>
+                    </div>
+                    <div class="form-group">
+                        <label>IP地址 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="inputIp" required>
+                    </div>
+                    <div class="form-group">
+                        <label>端口 <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="inputPort" value="502" required>
+                    </div>
+                    <div class="form-group">
+                        <label>读寄存器地址 <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="inputReadAddr" required>
+                    </div>
+                    <div class="form-group">
+                        <label>写寄存器地址 <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="inputWriteAddr" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveData()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/jquery.min.js}"></script>
+<script th:src="@{/js/bootstrap.min.js}"></script>
+<script th:src="@{/js/perfect-scrollbar.min.js}"></script>
+<script th:src="@{/js/main.min.js}"></script>
+<script th:src="@{/js/project/pagination.js}"></script>
+<script>
+    // 简单的内联JS实现业务逻辑
+    let currentPage = 1;
+
+    $(document).ready(function () {
+        loadData(1);
+
+        // 全选
+        $('#selectAll').click(function () {
+            $('.row-checkbox').prop('checked', this.checked);
+        });
+    });
+
+    function loadData(pageNum) {
+        currentPage = pageNum || 1;
+        const amrIdVal = $('#searchAmrId').val();
+
+        const params = {
+            pageNum: currentPage,
+            pageSize: 10,
+            amrId: amrIdVal ? parseInt(amrIdVal) : null
+        };
+
+        $.ajax({
+            url: '/api/amr/register/list',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(params),
+            success: function (res) {
+                if (res.code === 10000) {
+                    renderTable(res.data);
+                    renderPagination(res.data);
+                } else {
+                    alert(res.msg);
+                }
+            }
+        });
+    }
+
+    function renderTable(pageData) {
+        let html = '';
+        if (pageData.records && pageData.records.length > 0) {
+            pageData.records.forEach(item => {
+                html += `
+                    <tr>
+                        <td><input type="checkbox" class="row-checkbox" value="${item.id}"></td>
+                        <td>${item.id}</td>
+                        <td>${item.amrId}</td>
+                        <td>${item.ip}</td>
+                        <td>${item.port}</td>
+                        <td>${item.readAddress}</td>
+                        <td>${item.writeAddress}</td>
+                        <td>${new Date(item.createTime).toLocaleString()}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick='showEditModal(${JSON.stringify(item)})'>编辑</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteItem(${item.id})">删除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        } else {
+            html = '<tr><td colspan="9" class="text-center">暂无数据</td></tr>';
+        }
+        $('#dataTable').html(html);
+        $('#selectAll').prop('checked', false);
+    }
+
+    function showAddModal() {
+        $('#modalTitle').text('添加配置');
+        $('#configId').val('');
+        $('#editForm')[0].reset();
+        $('#editModal').modal('show');
+    }
+
+    function showEditModal(item) {
+        $('#modalTitle').text('编辑配置');
+        $('#configId').val(item.id);
+        $('#inputAmrId').val(item.amrId);
+        $('#inputIp').val(item.ip);
+        $('#inputPort').val(item.port);
+        $('#inputReadAddr').val(item.readAddress);
+        $('#inputWriteAddr').val(item.writeAddress);
+        $('#editModal').modal('show');
+    }
+
+    function saveData() {
+        const id = $('#configId').val();
+        const data = {
+            amrId: parseInt($('#inputAmrId').val()),
+            ip: $('#inputIp').val(),
+            port: parseInt($('#inputPort').val()),
+            readAddress: parseInt($('#inputReadAddr').val()),
+            writeAddress: parseInt($('#inputWriteAddr').val())
+        };
+
+        let url = '/api/amr/register/add';
+        if (id) {
+            url = '/api/amr/register/update';
+            data.id = parseInt(id);
+        }
+
+        if(!data.amrId || !data.ip || !data.port) {
+            alert("请填写必填项");
+            return;
+        }
+
+        $.ajax({
+            url: url,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function (res) {
+                if (res.code === 10000) {
+                    $('#editModal').modal('hide');
+                    alert('保存成功');
+                    loadData(currentPage);
+                } else {
+                    alert(res.msg || '保存失败');
+                }
+            }
+        });
+    }
+
+    function deleteItem(id) {
+        if(confirm('确定要删除吗？')) {
+            batchDeleteApi([id]);
+        }
+    }
+
+    function batchDelete() {
+        const ids = [];
+        $('.row-checkbox:checked').each(function() {
+            ids.push(parseInt($(this).val()));
+        });
+        if(ids.length === 0) {
+            alert('请至少选择一项');
+            return;
+        }
+        if(confirm('确定要删除选中的记录吗？')) {
+            batchDeleteApi(ids);
+        }
+    }
+
+    function batchDeleteApi(ids) {
+        $.ajax({
+            url: '/api/amr/register/delete',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(ids),
+            success: function (res) {
+                if (res.code === 10000) {
+                    alert('删除成功');
+                    loadData(currentPage);
+                } else {
+                    alert(res.msg || '删除失败');
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>

@@ -45,6 +45,9 @@
                         <li th:classappend="${#httpServletRequest.requestURI.endsWith('template')} ? 'active' : ''">
                             <a href="template" th:text="#{nav.template.config}">任务链设置</a>
                         </li>
+                        <li th:classappend="${#httpServletRequest.requestURI.endsWith('amr_register')} ? 'active' : ''">
+                            <a href="amr_register" th:text="#{nav.amr.register}">车辆寄存器配置</a>
+                        </li>
                         <!-- 仓库管理菜单 -->
                         <li th:classappend="${#httpServletRequest.requestURI.endsWith('warehouse')} ? 'active' : ''">
                             <a href="warehouse"><i class="mdi mdi-warehouse"></i> <span th:text="#{nav.warehouse.management}">仓库管理</span></a>

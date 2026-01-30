@@ -132,4 +132,9 @@ public class HxMapVertexes {
      * 是否广播：0-否，1-是
      */
     private Integer isBroadcast;
+
+    /**
+     * 货物重量
+     */
+    private Double weight;
 }

@@ -11,10 +11,13 @@ import com.hx.mqtt.domain.dto.MachineControlState;
 import com.hx.mqtt.domain.entity.HxMapVertexes;
 import com.hx.mqtt.domain.entity.HxUserTaskChainTemplate;
 import com.hx.mqtt.domain.entity.TaskChainTemplate;
+import com.hx.mqtt.domain.entity.WarehouseColumnVertexes;
 import com.hx.mqtt.handler.impl.TaskAddHandler;
+import com.hx.mqtt.service.HxMapVertexesService;
 import com.hx.mqtt.service.HxUserTaskChainTemplateService;
 import com.hx.mqtt.service.TaskChainTemplateService;
 import com.hx.mqtt.service.WarehouseColumnVertexesService;
+import com.hx.mqtt.service.impl.WarehouseColumnVertexesServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
@@ -34,6 +37,7 @@ public class TaskChainEndEventHandler implements ApplicationListener<TaskChainEn
     private final WarehouseColumnVertexesService warehouseColumnVertexesService;
     private final TaskChainTemplateService taskChainTemplateService;
     private final TaskAddHandler taskAddHandler;
+    private final HxMapVertexesService hxMapVertexesService;
 
     @Async
     @Override
@@ -132,6 +136,38 @@ public class TaskChainEndEventHandler implements ApplicationListener<TaskChainEn
                 log.warn("无法找到可用点位，无法自动下发下料任务。仓库ID: {}, 库位列ID: {}",
                         template.getWarehouseId(), template.getColumnId());
                 return;
+            }
+
+            // 1. 从全局缓存中获取该 AMR 绑定的重量
+            Double weight = GlobalCache.AMR_WEIGHT_MAP.get(amrId);
+
+            if (weight != null) {
+                // 3. 找到对应的 库位关联记录 (WarehouseColumnVertexes)
+                // 因为 targetPosition 只是地图点位，我们需要找到它在当前仓库中对应的关联记录ID
+
+                // 方式B: 直接使用 Wrapper 查询 (不需要修改 Service 接口)
+                LambdaQueryWrapper<WarehouseColumnVertexes> query = Wrappers.lambdaQuery();
+                query.eq(WarehouseColumnVertexes::getHxMapVertexesId, targetPosition.getId());
+                // 如果指定了列，加上列限制；否则可能需要根据仓库查所有列（稍微复杂），
+                // 简化处理：通常一个点位只属于一个库位，直接查 mapVertexId 即可
+                WarehouseColumnVertexes vertexAssoc = warehouseColumnVertexesService.getOne(query, false);
+
+                if (vertexAssoc != null) {
+                    // 4. 更新重量
+                    vertexAssoc.setWeight(weight);
+
+                    hxMapVertexesService.updateById(targetPosition);
+                    boolean updateSuccess = warehouseColumnVertexesService.updateById(vertexAssoc);
+
+                    // 5. 更新成功后，删除缓存
+                    if (updateSuccess) {
+                        GlobalCache.AMR_WEIGHT_MAP.remove(amrId);
+                        log.info("库位[{}] 重量已更新为: {}kg, 并清除AMR[{}]缓存",
+                                targetPosition.getCodeAlias(), weight, amrId);
+                    }
+                } else {
+                    log.warn("未找到点位[{}]对应的库位关联记录", targetPosition.getCodeAlias());
+                }
             }
 
             JSONObject jsonObject = new JSONObject();

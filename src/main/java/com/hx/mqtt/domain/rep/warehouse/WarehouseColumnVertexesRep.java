@@ -43,4 +43,6 @@ public class WarehouseColumnVertexesRep {
      * 关联的地图点位信息
      */
     private HxMapVertexes mapVertex;
+
+    private Double weight;  // 重量
 }

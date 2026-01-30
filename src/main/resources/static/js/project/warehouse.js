@@ -1090,7 +1090,7 @@ function generateWarehouseVisualization(warehouse) {
     const container = $('#warehouseGrid');
     container.empty();
 
-    console.log('开始生成可视化展示，仓库数据:', warehouse); // 调试日志
+    console.log('开始生成可视化展示，仓库数据:', warehouse);
 
     if (!warehouse.columns || warehouse.columns.length === 0) {
         container.html('<div class="text-center text-muted p-4">' + window.warehouseI18n.noColumnDataInWarehouse + '</div>');
@@ -1101,8 +1101,6 @@ function generateWarehouseVisualization(warehouse) {
     warehouse.columns.sort((a, b) => a.columnOrder - b.columnOrder);
 
     warehouse.columns.forEach(column => {
-        console.log(`处理库位列: ${column.columnName}, 点位数量: ${column.vertexes ? column.vertexes.length : 0}`); // 调试日志
-
         const columnDiv = $('<div class="warehouse-column"></div>');
 
         // 添加列标题
@@ -1114,51 +1112,33 @@ function generateWarehouseVisualization(warehouse) {
             column.vertexes.sort((a, b) => a.positionOrder - b.positionOrder);
 
             column.vertexes.forEach(vertex => {
-                console.log(`生成点位方块: 排序${vertex.positionOrder}, 地图点位:`, vertex.mapVertex); // 调试日志
-
-                // 优化显示文本
-                let displayText = '';
+                // --- 1. 处理名称显示逻辑 ---
+                let baseName = '';
                 let vertexCode = '';
 
                 if (vertex.mapVertex) {
                     vertexCode = vertex.mapVertex.code;
-
-                    // 有别名优先展示别名，无别名展示原名（点位编码）
-                    if (vertex.mapVertex.codeAlias && vertex.mapVertex.codeAlias.trim() !== '') {
-                        // 有别名，优先显示别名
-                        if (vertex.mapVertex.codeAlias.length <= 8) {
-                            displayText = vertex.mapVertex.codeAlias;
-                        } else {
-                            // 别名太长，截取显示
-                            displayText = vertex.mapVertex.codeAlias.substring(0, 6) + '...';
-                        }
-                    } else {
-                        // 无别名，显示点位编码（原名）
-                        if (vertex.mapVertex.code.length <= 8) {
-                            displayText = vertex.mapVertex.code;
-                        } else {
-                            // 编码太长，截取显示
-                            displayText = vertex.mapVertex.code.substring(0, 6) + '...';
-                        }
-                    }
+                    // 有别名优先展示别名，无别名展示原名
+                    baseName = (vertex.mapVertex.codeAlias && vertex.mapVertex.codeAlias.trim() !== '')
+                        ? vertex.mapVertex.codeAlias
+                        : vertex.mapVertex.code;
                 } else {
                     vertexCode = `P${vertex.positionOrder}`;
-                    displayText = window.warehouseI18n.positionPrefix + vertex.positionOrder;
+                    baseName = window.warehouseI18n.positionPrefix + vertex.positionOrder;
                 }
 
-                const vertexTitle = vertex.mapVertex ?
-                    window.warehouseI18n.positionTitleWithVertex
-                        .replace('{0}', vertex.mapVertex.code)
-                        .replace('{1}', vertex.mapVertex.codeAlias || window.warehouseI18n.noAlias)
-                        .replace('{2}', vertex.positionOrder)
-                        .replace('{3}', getStatusText(vertex.status))
-                        .replace('{4}', vertex.mapVertex.x || 0)
-                        .replace('{5}', vertex.mapVertex.y || 0) :
-                    window.warehouseI18n.positionTitleWithoutVertex
-                        .replace('{0}', vertex.positionOrder)
-                        .replace('{1}', getStatusText(vertex.status));
+                // 截取显示名称（防止撑破方块）
+                let displayBaseName = baseName.length > 8 ? baseName.substring(0, 6) + '...' : baseName;
 
-                // 根据状态设置样式类
+                // --- 2. 构造内部 HTML (名称 + 重量并存) ---
+                let finalContentHtml = `<div class="pos-name-label" style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${displayBaseName}</div>`;
+
+                // 如果是占用状态(2) 且有重量数据，追加显示重量
+                if (vertex.status === 2 && vertex.weight != null && vertex.weight > 0) {
+                    finalContentHtml += `<div class="pos-weight-label" style="font-size: 0.85em; opacity: 0.9; margin-top: 2px; border-top: 1px solid rgba(255,255,255,0.2);">(${vertex.weight}kg)</div>`;
+                }
+
+                // --- 3. 确定状态样式和工具提示 ---
                 let statusClass = 'position-available';
                 let statusText = window.warehouseI18n.statusAvailable;
 
@@ -1175,12 +1155,8 @@ function generateWarehouseVisualization(warehouse) {
                         statusClass = 'position-disabled';
                         statusText = window.warehouseI18n.statusDisabled;
                         break;
-                    default:
-                        statusClass = 'position-available';
-                        statusText = window.warehouseI18n.statusAvailable;
                 }
 
-                // 更新工具提示，包含状态信息
                 const enhancedTitle = vertex.mapVertex ?
                     window.warehouseI18n.positionTitleWithVertex
                         .replace('{0}', vertex.mapVertex.code)
@@ -1193,30 +1169,29 @@ function generateWarehouseVisualization(warehouse) {
                         .replace('{0}', vertex.positionOrder)
                         .replace('{1}', statusText);
 
+                // --- 4. 创建并绑定 DOM ---
                 const positionBtn = $(`
-                    <div class="position-btn ${statusClass} ${displayText.length > 6 ? 'long-text' : ''}"
+                    <div class="position-btn ${statusClass}"
+                         style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 55px; padding: 4px;"
                          data-position-id="${vertex.positionId}"
                          data-vertex-code="${vertexCode}"
                          data-status="${vertex.status || 1}"
                          title="${enhancedTitle}">
-                        ${displayText}
+                        ${finalContentHtml}
                     </div>
                 `);
 
-                // 添加点击事件
+                // 绑定左键点击
                 positionBtn.on('click', function (e) {
-                    // 检查是否在批量选择模式下
                     if (handlePositionClick(this, vertex.positionId)) {
                         e.preventDefault();
                         e.stopPropagation();
                         return;
                     }
-
-                    // 正常模式下显示点位详情
                     showPositionDetails(vertex);
                 });
 
-                // 添加右键菜单事件
+                // 绑定右键菜单
                 positionBtn.on('contextmenu', function (e) {
                     e.preventDefault();
                     showPositionContextMenu(e, vertex);
@@ -1225,7 +1200,6 @@ function generateWarehouseVisualization(warehouse) {
                 columnDiv.append(positionBtn);
             });
         } else {
-            // 显示空位提示
             columnDiv.append(`
                 <div class="position-btn position-empty" title="${window.warehouseI18n.noPositionDataText}">
                     <small>${window.warehouseI18n.noPositionDataText}</small>
@@ -1235,7 +1209,6 @@ function generateWarehouseVisualization(warehouse) {
 
         container.append(columnDiv);
     });
-
 }
 
 // 显示点位详情
@@ -1259,6 +1232,14 @@ function showPositionDetails(vertex) {
         default:
             statusHtml = '<span class="badge badge-secondary">' + window.warehouseI18n.statusUnknown + '</span>';
     }
+
+    // ================== 新增代码开始 ==================
+    // 如果是占用状态且有重量，显示重量徽章
+    if (vertex.status === 2 && vertex.weight != null && vertex.weight > 0) {
+        statusHtml += ` <span class="badge badge-info" style="margin-left: 5px;">${vertex.weight}kg</span>`;
+    }
+    // ================== 新增代码结束 ==================
+
     $('#detailPositionStatus').html(statusHtml);
 
     // 填充地图点位信息
