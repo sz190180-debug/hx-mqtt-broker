@@ -684,7 +684,6 @@
                 <h4 class="modal-title"><i class="mdi mdi-pencil"></i> <span th:text="#{modal.title.edit.position.association}">编辑点位关联</span></h4>
             </div>
             <div class="modal-body">
-                <!-- 错误提示区域 -->
                 <div id="editVertexesError" class="alert alert-danger" style="display: none;" role="alert">
                     <h6 class="alert-heading"><i class="mdi mdi-alert-circle"></i> <span th:text="#{error.update.failed}">更新失败</span></h6>
                     <p class="mb-0" id="editVertexesErrorMessage"></p>
@@ -723,6 +722,13 @@
                             <option value="3" th:text="#{status.disabled}">禁用</option>
                         </select>
                     </div>
+
+                    <div class="form-group">
+                        <label for="editPositionWeight">重量 (kg)</label>
+                        <input class="form-control" id="editPositionWeight" name="weight"
+                               placeholder="0.0" type="number" step="0.1" min="0">
+                    </div>
+
                 </form>
             </div>
             <div class="modal-footer">
@@ -764,6 +770,10 @@
                                     <tr>
                                         <td><strong><span th:text="#{detail.status}">状态</span>:</strong></td>
                                         <td id="detailPositionStatus">-</td>
+                                    </tr>
+                                    <tr id="detailPositionWeightRow">
+                                        <td><strong>重量:</strong></td>
+                                        <td id="detailPositionWeight"><span class="badge badge-info">0 kg</span></td>
                                     </tr>
                                 </table>
                             </div>

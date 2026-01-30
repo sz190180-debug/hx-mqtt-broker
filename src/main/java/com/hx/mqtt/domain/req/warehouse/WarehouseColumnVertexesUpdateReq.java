@@ -39,4 +39,9 @@ public class WarehouseColumnVertexesUpdateReq {
      */
     @NotNull(message = "状态不能为空")
     private Integer status;
+
+    /**
+     * 货物重量 (新增)
+     */
+    private Double weight;
 }

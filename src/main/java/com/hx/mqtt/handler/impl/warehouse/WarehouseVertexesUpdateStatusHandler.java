@@ -72,6 +72,10 @@ public class WarehouseVertexesUpdateStatusHandler implements MqttTopicHandler {
 
                 warehouseColumnVertexes.setStatus(v);
 
+                if (v == 1 || v == 3) {
+                    warehouseColumnVertexes.setWeight(0.0);
+                }
+
                 boolean update = warehouseColumnVertexesService.updateById(warehouseColumnVertexes);
 
                 log.info("{}更新点位状态：{}", k, update);

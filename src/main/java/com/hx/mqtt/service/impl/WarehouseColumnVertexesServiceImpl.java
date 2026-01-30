@@ -356,6 +356,15 @@ public class WarehouseColumnVertexesServiceImpl extends ServiceImpl<WarehouseCol
                 Integer oldStatus = position.getStatus();
                 position.setStatus(req.getStatus());
 
+                if (req.getStatus() == 1 || req.getStatus() == 3) {
+                    position.setWeight(0.0);
+                }
+
+                // 如果请求中带了新的重量（用于手动改重量功能），则设置新重量
+                if (req.getWeight() != null) {
+                    position.setWeight(req.getWeight());
+                }
+
                 boolean updateSuccess = updateById(position);
 
                 if (updateSuccess) {

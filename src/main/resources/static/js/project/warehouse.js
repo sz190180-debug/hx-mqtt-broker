@@ -633,6 +633,9 @@ function editVertexes(positionId) {
                 $('#editPositionOrder').val(vertex.positionOrder);
                 $('#editPositionStatus').val(vertex.status || 1);
 
+                // === 新增：回显重量 ===
+                $('#editPositionWeight').val(vertex.weight || 0);
+
                 // 隐藏错误提示
                 $('#editVertexesError').hide();
 
@@ -787,7 +790,9 @@ function updateWarehouseVertexes() {
         columnId: parseInt($('#editVertexesColumnId').val()),
         hxMapVertexesId: parseInt($('#editMapVertexSelect').val()),
         positionOrder: parseInt($('#editPositionOrder').val()),
-        status: parseInt($('#editPositionStatus').val())
+        status: parseInt($('#editPositionStatus').val()),
+        // === 新增：获取重量 ===
+        weight: parseFloat($('#editPositionWeight').val()) || 0
     };
 
     if (!formData.hxMapVertexesId || !formData.positionOrder || !formData.status) {
@@ -1233,14 +1238,18 @@ function showPositionDetails(vertex) {
             statusHtml = '<span class="badge badge-secondary">' + window.warehouseI18n.statusUnknown + '</span>';
     }
 
-    // ================== 新增代码开始 ==================
-    // 如果是占用状态且有重量，显示重量徽章
-    if (vertex.status === 2 && vertex.weight != null && vertex.weight > 0) {
-        statusHtml += ` <span class="badge badge-info" style="margin-left: 5px;">${vertex.weight}kg</span>`;
-    }
-    // ================== 新增代码结束 ==================
+    // 注意：此处已移除原来追加重量到 statusHtml 的逻辑
 
     $('#detailPositionStatus').html(statusHtml);
+
+    // ================== 修改：一直展示重量 ==================
+    // 无论是否为0，都显示重量行。如果没有值则显示 0kg
+    const weightVal = (vertex.weight !== undefined && vertex.weight !== null) ? vertex.weight : 0;
+    // 使用 badge-info 样式显示，或者直接显示文本
+    $('#detailPositionWeight').html(`<span class="badge badge-info" style="font-size: 100%;">${weightVal} kg</span>`);
+    // 确保行是可见的
+    $('#detailPositionWeightRow').show();
+    // ================== 修改结束 ==================
 
     // 填充地图点位信息
     if (vertex.mapVertex) {
@@ -1255,19 +1264,17 @@ function showPositionDetails(vertex) {
         $('#detailVertexTheta').text('-');
     }
 
-    // 填充所属信息（需要从当前选择的仓库和库位列获取）
+    // 填充所属信息
     const selectedWarehouseName = $('#warehouseSelect option:selected').text();
     $('#detailWarehouseName').text(selectedWarehouseName || '-');
 
-    // 查找所属库位列名称
     const columnElement = $(`[data-position-id="${vertex.positionId}"]`).closest('.warehouse-column');
     const columnName = columnElement.find('.column-header').text();
     $('#detailColumnName').text(columnName || '-');
 
-    // 创建时间（模拟数据，实际应该从后端获取）
     $('#detailCreateTime').text(new Date().toLocaleDateString());
 
-    // 设置按钮事件
+    // 按钮事件
     $('#editPositionBtn').off('click').on('click', function () {
         $('#positionDetailModal').modal('hide');
         editVertexes(vertex.positionId);
@@ -1278,7 +1285,6 @@ function showPositionDetails(vertex) {
         deleteVertexes(vertex.positionId);
     });
 
-    // 显示模态框
     $('#positionDetailModal').modal('show');
 }
 

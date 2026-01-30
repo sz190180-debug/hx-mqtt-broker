@@ -33,4 +33,6 @@ public class BatchUpdatePositionStatusReq {
      * 更新模式：all-全部更新，available-仅更新可用，occupied-仅更新占用，disabled-仅更新禁用
      */
     private String updateMode = "all";
+
+    private Double weight;
 }
