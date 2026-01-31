@@ -34,5 +34,8 @@ public class BatchUpdatePositionStatusReq {
      */
     private String updateMode = "all";
 
+    /**
+     * 货物重量 (新增，修复编译错误)
+     */
     private Double weight;
 }

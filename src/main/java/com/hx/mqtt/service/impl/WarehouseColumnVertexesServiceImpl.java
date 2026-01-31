@@ -1,6 +1,7 @@
 package com.hx.mqtt.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -72,7 +73,15 @@ public class WarehouseColumnVertexesServiceImpl extends ServiceImpl<WarehouseCol
             checkVertexUniqueness(req.getHxMapVertexesId(), req.getPositionId());
         }
 
-        BeanUtil.copyProperties(req, existing);
+        // 【修改点 1】使用 CopyOptions 忽略 null 值，防止只修改状态时，weight 被置为 null
+        BeanUtil.copyProperties(req, existing, CopyOptions.create().setIgnoreNullValue(true));
+
+        // 【修改点 2】逻辑优化：
+        // 如果状态变为可用(1)或禁用(3)，且前端没有显式传入重量（或传了0），则强制重置为0.0
+        // 这样既保证了状态切换时的清理，又允许用户手动设置非0重量（如果非要这么做的话）
+        if ((req.getStatus() == 1 || req.getStatus() == 3) && (req.getWeight() == null || req.getWeight() == 0)) {
+            existing.setWeight(0.0);
+        }
 
         return updateById(existing);
     }
@@ -328,14 +337,9 @@ public class WarehouseColumnVertexesServiceImpl extends ServiceImpl<WarehouseCol
 
         log.info("开始批量更新点位状态，总数量: {}, 目标状态: {}, 更新模式: {}",
                 req.getPositionIds().size(), req.getStatus(), req.getUpdateMode());
-        log.info("请求的点位ID列表: {}", req.getPositionIds());
 
-        // 批量获取所有点位信息
         List<WarehouseColumnVertexes> allPositions = listByIds(req.getPositionIds());
-        log.info("从数据库查询到的点位数量: {}", allPositions.size());
-
         if (allPositions.isEmpty()) {
-            log.warn("没有找到任何点位，请求的ID: {}", req.getPositionIds());
             result.setFailCount(req.getPositionIds().size());
             req.getPositionIds().forEach(id -> {
                 result.getFailPositionIds().add(id);
@@ -345,22 +349,19 @@ public class WarehouseColumnVertexesServiceImpl extends ServiceImpl<WarehouseCol
             return result;
         }
 
-        // 根据更新模式过滤点位
         List<WarehouseColumnVertexes> positionsToUpdate = filterPositionsByUpdateMode(allPositions, req.getUpdateMode());
 
-        log.info("根据更新模式 {} 过滤后，需要更新的点位数量: {}", req.getUpdateMode(), positionsToUpdate.size());
-
-        // 批量更新点位状态
         for (WarehouseColumnVertexes position : positionsToUpdate) {
             try {
-                Integer oldStatus = position.getStatus();
                 position.setStatus(req.getStatus());
 
+                // 【逻辑确认】如果是改为可用(1)或禁用(3)，默认重置重量为0
                 if (req.getStatus() == 1 || req.getStatus() == 3) {
                     position.setWeight(0.0);
                 }
 
-                // 如果请求中带了新的重量（用于手动改重量功能），则设置新重量
+                // 【逻辑确认】如果请求中显式带了重量参数，则覆盖（优先级更高）
+                // 此时 req.getWeight() 不会报错，因为已经在 DTO 中添加了字段
                 if (req.getWeight() != null) {
                     position.setWeight(req.getWeight());
                 }
@@ -370,9 +371,6 @@ public class WarehouseColumnVertexesServiceImpl extends ServiceImpl<WarehouseCol
                 if (updateSuccess) {
                     result.getSuccessPositionIds().add(position.getPositionId());
                     result.setSuccessCount(result.getSuccessCount() + 1);
-
-                    log.debug("成功更新点位状态，ID: {}, 旧状态: {}, 新状态: {}",
-                            position.getPositionId(), oldStatus, req.getStatus());
                 } else {
                     result.getFailPositionIds().add(position.getPositionId());
                     result.getFailReasons().add("数据库更新失败");
@@ -382,32 +380,21 @@ public class WarehouseColumnVertexesServiceImpl extends ServiceImpl<WarehouseCol
                 result.getFailPositionIds().add(position.getPositionId());
                 result.getFailReasons().add("更新异常: " + e.getMessage());
                 result.setFailCount(result.getFailCount() + 1);
-
                 log.error("更新点位状态时发生异常，点位ID: {}", position.getPositionId(), e);
             }
         }
 
-        // 处理不符合更新模式的点位
+        // 处理未选中和不存在的ID逻辑... (保持不变)
         List<Long> excludedPositionIds = new ArrayList<>();
         for (WarehouseColumnVertexes position : allPositions) {
-            if (!positionsToUpdate.contains(position)) {
-                excludedPositionIds.add(position.getPositionId());
-            }
+            if (!positionsToUpdate.contains(position)) excludedPositionIds.add(position.getPositionId());
         }
-
         if (!excludedPositionIds.isEmpty()) {
             result.getFailPositionIds().addAll(excludedPositionIds);
-            for (int i = 0; i < excludedPositionIds.size(); i++) {
-                result.getFailReasons().add("不符合更新模式条件");
-            }
+            for (int i = 0; i < excludedPositionIds.size(); i++) result.getFailReasons().add("不符合更新模式条件");
             result.setFailCount(result.getFailCount() + excludedPositionIds.size());
         }
-
-        // 处理不存在的点位ID
-        List<Long> existingIds = allPositions.stream()
-                .map(WarehouseColumnVertexes::getPositionId)
-                .collect(Collectors.toList());
-
+        List<Long> existingIds = allPositions.stream().map(WarehouseColumnVertexes::getPositionId).collect(Collectors.toList());
         for (Long requestId : req.getPositionIds()) {
             if (!existingIds.contains(requestId)) {
                 result.getFailPositionIds().add(requestId);
@@ -417,9 +404,6 @@ public class WarehouseColumnVertexesServiceImpl extends ServiceImpl<WarehouseCol
         }
 
         result.generateSummary();
-
-        log.info("批量更新点位状态完成，{}", result.getSummary());
-
         return result;
     }
 
