@@ -58,25 +58,26 @@ public class TaskChainTemplateSubmitHandler implements MqttTopicHandler {
             return MqttResp.fail(context.getReqId(), MqttRespEnum.EXCEPTION.getMsg());
         }
 
+        // todo 暂时解锁
         // 3. 【加锁区域】 synchronized
         // 确保同一时刻只有一个线程能进行“检查+提交”的操作
-        synchronized (this) {
+//        synchronized (this) {
 
             // 4. 【逻辑修正】先检查该仓库下是否有正在运行的任务
             // 注意：必须在提交RCS之前检查，否则会导致任务已经下发了才报错
-            List<HxUserTaskChainTemplate> list = hxUserTaskChainTemplateService.lambdaQuery()
-                    .eq(HxUserTaskChainTemplate::getWarehouseId, template.getWarehouseId())
-                    .list();
+//            List<HxUserTaskChainTemplate> list = hxUserTaskChainTemplateService.lambdaQuery()
+//                    .eq(HxUserTaskChainTemplate::getWarehouseId, template.getWarehouseId())
+//                    .list();
 
-            for (HxUserTaskChainTemplate hxUserTaskChainTemplate : list) {
-                // 如果有关联的任务ID，且该任务ID在缓存中（说明正在运行）
-                if (hxUserTaskChainTemplate.getLastTaskChainId() != null) {
-                    if (TASK_ID_AMR_MAP.containsKey(hxUserTaskChainTemplate.getLastTaskChainId())) {
-                        log.warn("仓库 {} 正忙，任务 {} 正在运行", template.getWarehouseId(), hxUserTaskChainTemplate.getLastTaskChainId());
-                        return MqttResp.fail(context.getReqId(), MqttRespEnum.TASK_RUNNING_FAILED.getMsg());
-                    }
-                }
-            }
+//            for (HxUserTaskChainTemplate hxUserTaskChainTemplate : list) {
+//                // 如果有关联的任务ID，且该任务ID在缓存中（说明正在运行）
+//                if (hxUserTaskChainTemplate.getLastTaskChainId() != null) {
+//                    if (TASK_ID_AMR_MAP.containsKey(hxUserTaskChainTemplate.getLastTaskChainId())) {
+//                        log.warn("仓库 {} 正忙，任务 {} 正在运行", template.getWarehouseId(), hxUserTaskChainTemplate.getLastTaskChainId());
+//                        return MqttResp.fail(context.getReqId(), MqttRespEnum.TASK_RUNNING_FAILED.getMsg());
+//                    }
+//                }
+//            }
 
             // 5. 只有检查通过了，才提交给 RCS
             Integer taskIdInt = rcsApiService.taskChainTemplateSubmit(taskChainTemplate.getId());
@@ -97,6 +98,6 @@ public class TaskChainTemplateSubmitHandler implements MqttTopicHandler {
             GlobalCache.TASK_ID_AMR_MAP.put(taskId, 0L);
 
             return MqttResp.success(context.getReqId(), new TaskAddRep(taskId, taskChainTemplate.getId()));
-        }
+//        }
     }
 }

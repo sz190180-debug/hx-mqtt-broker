@@ -44,6 +44,9 @@ public class MqttConfig {
     @Value("${mqtt.client.async}")
     private boolean clientAsync;  // 注入异步发送配置
 
+    @Value("${mqtt.client.message-size:131072}")
+    private int messageSize;  // 注入异步发送配置
+
     /**
      * 嵌入式Broker配置
      */
@@ -58,6 +61,7 @@ public class MqttConfig {
         config.setProperty("websocket_host", brokerHost);
         config.setProperty("allow_anonymous", "false");
         config.setProperty("authenticator_class", DatabaseAuthenticator.class.getName());
+        config.setProperty("netty.mqtt.message_size", String.valueOf(messageSize));
 
 
         server.startServer(config);

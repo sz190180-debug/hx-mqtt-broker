@@ -9,6 +9,7 @@ mqtt:
   client:
     server-uri: tcp://localhost:1883  # 客户端连接的Broker地址，部署需要修改为服务器ip
     async: true                       # 是否异步发送
+    message-size: 131072
 
 spring:
   security:
